@@ -2,8 +2,21 @@
 
 "use strict"; // Do NOT remove this directive!
 
+const CreditMessage = "Special thanks to Tom Geng'25 for helping with designing the artistic elements in this game :)\n";
+
+// Color codes.
+const COLOR_RED = 0xDE7378;
+const COLOR_BLUE = 0x73DED9;
+
+const COLOR_DARK_RED = 0x811E23;
+const COLOR_DARK_BLUE = 0x1E817D;
+
 const STEP_DEBUG = true; // Yield debugging message in each steps in the procedure.
 const FUNCTION_DEBUG = true; // Yield debugging message for the return value of functions.
+
+const WARN_INVALID_MOVE = -1;
+const SUCCESS = 1;
+const GAME_END = 2;
 
 const OverallWidth = 9;
 const OverallHeight = 9;
@@ -44,6 +57,7 @@ var stat = {
     result: [],
     curx: -1,
     cury: -1,
+    winner: 0,
 
     // Functions
 
@@ -67,64 +81,20 @@ var stat = {
 
         var color = PS.COLOR_WHITE;
         if(value == 1)
-            color = PS.COLOR_RED;
+            color = COLOR_BLUE;
         else if(value == 2)
-            color = PS.COLOR_BLUE;
+            color = COLOR_RED;
 
         for(let i=0; i<=2; i++)
             for(let j=0; j<=2; j++)
                 PS.color(x+i, y+j, color);
     },
 
-    checkoverallwin: function()
+    paintall: function()
     {
-        if(check(stat.result[0][0], stat.result[0][1], stat.result[0][2]))
-            return stat.result[0][0];
-        if(check(stat.result[1][0], stat.result[1][1], stat.result[1][2]))
-            return stat.result[1][0];
-        if(check(stat.result[2][0], stat.result[2][1], stat.result[2][2]))
-            return stat.result[2][0];
-
-        if(check(stat.result[0][0], stat.result[1][0], stat.result[2][0]))
-            return stat.result[0][0];
-        if(check(stat.result[0][1], stat.result[1][1], stat.result[2][1]))
-            return stat.result[0][1];
-        if(check(stat.result[0][2], stat.result[1][2], stat.result[2][2]))
-            return stat.result[0][2];
-
-        if(check(stat.result[0][0], stat.result[1][1], stat.result[2][2]))
-            return stat.result[0][0];
-        if(check(stat.result[0][2], stat.result[1][1], stat.result[2][0]))
-            return stat.result[0][2];
-
-        return 0;
-    },
-
-    clearColor: function(x, y)
-    {
-        if(x == -1 || y == -1)
-            return;
-
-        x *= 3, y *= 3;
-
-        for(let i=0; i<=2; i++)
-            for(let j=0; j<=2; j++)
-                PS.color(x+i, y+j, PS.COLOR_WHITE);
-    },
-
-    paintHint: function(x, y)
-    {
-        stat.curx = x, stat.cury = y;
-
-        if(stat.result[x][y] != 0)
-            return;
-
-        x *= 3, y *= 3;
-
-        for(let i=0; i<=2; i++)
-            for(let j=0; j<=2; j++)
-                if(stat.map[x+i][y+j] == 0)
-                    PS.color(x+i, y+j, PS.COLOR_YELLOW);
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                stat.paint(i, j, stat.result[i][j]);
     },
 
     /*
@@ -161,38 +131,133 @@ var stat = {
         return stat.result[x][y];
     },
 
+    checkoverallwin: function()
+    {
+        if(check(stat.result[0][0], stat.result[0][1], stat.result[0][2]))
+            return stat.result[0][0];
+        if(check(stat.result[1][0], stat.result[1][1], stat.result[1][2]))
+            return stat.result[1][0];
+        if(check(stat.result[2][0], stat.result[2][1], stat.result[2][2]))
+            return stat.result[2][0];
+
+        if(check(stat.result[0][0], stat.result[1][0], stat.result[2][0]))
+            return stat.result[0][0];
+        if(check(stat.result[0][1], stat.result[1][1], stat.result[2][1]))
+            return stat.result[0][1];
+        if(check(stat.result[0][2], stat.result[1][2], stat.result[2][2]))
+            return stat.result[0][2];
+
+        if(check(stat.result[0][0], stat.result[1][1], stat.result[2][2]))
+            return stat.result[0][0];
+        if(check(stat.result[0][2], stat.result[1][1], stat.result[2][0]))
+            return stat.result[0][2];
+
+        return 0;
+    },
+
+    paintHint: function(x, y)
+    {
+        if(stat.result[x][y] != 0)
+            return;
+
+        x *= 3, y *= 3;
+
+        for(let i=0; i<=2; i++)
+            for(let j=0; j<=2; j++)
+                if(stat.map[x+i][y+j] == 0)
+                    PS.color(x+i, y+j, PS.COLOR_YELLOW);
+    },
+
+    paintHintAll: function()
+    {
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                stat.paintHint(i, j);
+    },
+
+    isValidCell: function(x, y)
+    {
+        if(stat.result[x][y] != 0)
+            return false;
+        var cnt = 0;
+
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                if(stat.map[3*x+i][3*y+j] == 0)
+                    cnt++;
+        
+        if(cnt > 0)
+            return true;
+        else
+            return false;
+    },
+
     /*
-    The click(x, y) function updates a click on a tile.
+    The onClick(x, y) function updates a click on a tile.
     */
-    click: function(x, y)
+    onClick: function(x, y)
     {
         if(stat.map[x][y] != 0)
-            return 0; // Not successful - already occupied.
-
-        stat.map[x][y] = stat.player;
-        if(stat.player == 1)
-            PS.glyph(x, y, "O");
-        else
-            PS.glyph(x, y, "X");
-
-        stat.player = 3 - stat.player;
-
-        if(FUNCTION_DEBUG)
-            PS.debug(stat.checkwin(Math.floor(x/3), Math.floor(y/3)));
-        else
-            stat.checkwin(Math.floor(x/3), Math.floor(y/3));
-
-        var res = stat.checkoverallwin();
-
-        if(res != 0)
         {
-            PS.statusText("Congradulations to player " + res + " for winning!");
+            PS.debug("Warning from onClick(x, y): Invalid move - tile occupied.\n");
+            return WARN_INVALID_MOVE; // Not successful - already occupied.
+        }
+        if(stat.result[Math.floor(x/3)][Math.floor(y/3)] != 0)
+        {
+            PS.debug("Warning from onClick(x, y): Invalid move - cell already has a winner.\n");
+            return WARN_INVALID_MOVE;
+        }
+        if(stat.winner != 0)
+        {
+            PS.debug("Warning from onClick(x, y): Invalid move - game already ended with a winner.\n");
+            return WARN_INVALID_MOVE;
         }
 
-        stat.clearColor(stat.curx, stat.cury);
-        stat.paintHint(x%3, y%3);
+        // Recolor the previous information.
+        if(stat.curx == -1 || stat.cury == -1)
+            stat.paintall();
+        else
+            stat.paint(stat.curx, stat.cury);
 
-        return 1;
+        
+        // Update the game results.
+        stat.map[x][y] = stat.player;
+
+        if(stat.isValidCell(x%3, y%3))
+            stat.curx = x%3, stat.cury = y%3;
+        else
+            stat.curx = stat.cury = -1;
+
+        stat.checkwin(Math.floor(x/3), Math.floor(y/3));
+
+        stat.winner = stat.checkoverallwin();
+
+        // Update the graphical display.
+        if(stat.player == 1)
+        {
+            PS.glyph(x, y, "O");
+            PS.glyphColor(x, y, COLOR_DARK_BLUE);
+        }
+        else
+        {
+            PS.glyph(x, y, "X");
+            PS.glyphColor(x, y, COLOR_DARK_RED);
+        }
+
+        // Check if the game ends.
+        if(stat.winner != 0)
+        {
+            PS.statusText("Congradulations to player " + stat.winner + " for winning!");
+            return GAME_END;
+        }
+
+        if(stat.curx == -1 || stat.cury == -1)
+            stat.paintHintAll();
+        else
+            stat.paintHint(stat.curx, stat.cury);
+        stat.player = 3 - stat.player;
+
+        return SUCCESS;
     }
 }
 
@@ -211,14 +276,16 @@ PS.init = function( system, options ) {
     }
 
     if(STEP_DEBUG)
-        PS.debug("Successfully built the border!");
+        PS.debug("Successfully built the border!\n");
+
+    PS.debug(CreditMessage);
 
     stat.setup();
 };
 
 
 PS.touch = function( x, y, data, options ) {
-	stat.click(x, y);
+	stat.onClick(x, y);
 };
 
 /*
