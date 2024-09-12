@@ -1,0 +1,77 @@
+<!--
+game.html for Perlenspiel 3.3.x
+Last revision: 2022-03-15 (BM)
+
+Perlenspiel is a scheme by Professor Moriarty (bmoriarty@wpi.edu).
+This version of Perlenspiel (3.3.x) is hosted at <https://ps3.perlenspiel.net>
+Perlenspiel is Copyright © 2009-22 Brian Moriarty.
+This file is part of the standard Perlenspiel 3.3.x devkit distribution.
+
+Perlenspiel is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Perlenspiel is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Lesser General Public License for more details.
+
+You may have received a copy of the GNU Lesser General Public License
+along with the Perlenspiel devkit. If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>Perlenspiel 3.3</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+	<meta name="description" content="Perlenspiel 3.3" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<meta name="mobile-web-app-capable" content="yes" />
+	<link rel="icon" type="image/svg+xml" sizes="any" href="https://perlenspiel.net/ps3/engine/images/pslogo.svg" />
+	<link rel="stylesheet" type="text/css" href="https://perlenspiel.net/ps3/engine/ps3.3.css" />
+	<script type="text/javascript" src="https://perlenspiel.net/ps3/engine/ps3.3.js"></script>
+</head>
+<body onload="PS._sys( 0x303030, 0xFFFFFF, 'Touch image to begin' );">
+	<!--
+	The following OPTIONAL mods to this file are permitted:
+
+	The three arguments to the PS._sys() call in the <body> tag above control the appearance of the cover page
+	displayed before your application begins. The values supplied are the engine defaults.
+
+	The first argument specifies the cover page background color.
+	It should be a hexadecimal RGB triplet in the range 0x000000 to 0xFFFFFF inclusive.
+	Values outside this range are clamped. Default = 0x303030 (dark gray).
+
+	The second argument specifies the status line text color.
+	It should also be a hexadecimal RGB triplet in the range 0x000000 to 0xFFFFFF inclusive.
+	Values outside this range are clamped. Default = 0xFFFFFF (pure white).
+
+	The third argument specifies the text initially displayed in the status line above the grid.
+	It should be specified as a BRIEF (< 24 characters) string, which must be enclosed in SINGLE quotes.
+	To suppress the status line text, specify an empty string: '' (an unspaced pair of SINGLE quotes).
+	Default = 'Touch image to begin'.
+
+	By default, the engine attempts to load a 24-bit RGB image file named "cover.png" located in the same directory as this .html file.
+	This image is displayed underneath the status line. Clicking or touching the image will start the application.
+	You can freely edit the appearance of the "cover.png" image file to suit your needs.
+	However, the original filename, location and dimensions (512 x 512 pixels) of the "cover.png" file must NOT be altered.
+	If no "cover.png" file is present in the same directory as this .html file when the engine is initialized,
+	or if that file fails to load for any reason, a tasteful image of the Perlenspiel logo will be displayed instead.
+
+	By default, the engine attempts to load a JavaScript file named "game.js" located in the same directory as this .html file.
+	That file is expected to respond to the event handlers documented in the game.js template file provided in the Perlenspiel devkit.
+	You can change the "game.js" file specifier in the <script> element below to specify a different .js file.
+	The file specifier may be expressed relative to the directory containing this .html file, or may be fully qualified.
+	You can also add additional <script> elements if needed. The specified .js files will be loaded in the order given.
+
+	IMPORTANT!
+
+	Altering this .html file, or its accompanying .png and .js files, IN ANY WAY other than the methods explicitly described
+	in the above comments can result in unpredictable engine behavior and/or breakage, and is a grievous violation of The Rules.
+	-->
+	<script type="text/javascript" src="game.js"></script>
+</body>
+</html>
