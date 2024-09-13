@@ -73,6 +73,7 @@ var stat = {
         stat.result = new Array(3).fill(0).map(() => new Array(3).fill(0));
 
         // PS.debug(stat.map[8][8]);
+        stat.curx = stat.cury = -1;
     },
 
     paint: function(x, y, value)
@@ -211,6 +212,15 @@ var stat = {
         {
             PS.debug("Warning from onClick(x, y): Invalid move - game already ended with a winner.\n");
             return WARN_INVALID_MOVE;
+        }
+        
+        if(stat.curx != -1 && stat.cury != -1)
+        {
+            if(Math.floor(x/3) != stat.curx || Math.floor(y/3) != stat.cury)
+            {
+                PS.debug("Warning from onClick(x, y): Invalid move - wrong cell.");
+                return WARN_INVALID_MOVE;
+            }
         }
 
         // Recolor the previous information.
