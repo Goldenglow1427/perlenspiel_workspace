@@ -1,3 +1,10 @@
+/**
+ * Features to add:
+ * - record(): mostly for debug, record the steps in local file for further check;
+ * - Bottom status bar for team color, team scores, and restart the game;
+ */
+
+
 // Constants used.
 
 "use strict"; // Do NOT remove this directive!
@@ -75,6 +82,8 @@ var stat = {
 
         // PS.debug(stat.map[8][8]);
         stat.curx = stat.cury = -1;
+
+        PS.statusText("It's player "+ stat.player + "'s turn");        
     },
 
     paint: function(x, y, value)
@@ -165,6 +174,14 @@ var stat = {
         if(check(stat.result[0][2], stat.result[1][1], stat.result[2][0]))
             return stat.result[0][2];
 
+        var cnt = 0;
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                if(stat.result[i][j] != 0)
+                    cnt++;
+        if(cnt == 9)
+            return 3;
+
         return 0;
     },
 
@@ -244,14 +261,7 @@ var stat = {
         
         // Update the game results.
         stat.map[x][y] = stat.player;
-
-        if(stat.isValidCell(x%3, y%3))
-            stat.curx = x%3, stat.cury = y%3;
-        else
-            stat.curx = stat.cury = -1;
-
         stat.checkwin(Math.floor(x/3), Math.floor(y/3));
-
         stat.winner = stat.checkoverallwin();
 
         // Update the graphical display.
@@ -266,8 +276,18 @@ var stat = {
             PS.glyphColor(x, y, COLOR_DARK_RED);
         }
 
+        if(stat.isValidCell(x%3, y%3))
+            stat.curx = x%3, stat.cury = y%3;
+        else
+            stat.curx = stat.cury = -1;
+
         // Check if the game ends.
-        if(stat.winner != 0)
+        if(stat.winner == 3)
+        {
+            PS.statusText("The game is ending with a tie.");
+            return GAME_END;
+        }
+        else if(stat.winner != 0)
         {
             PS.statusText("Congradulations to player " + stat.winner + " for winning!");
             return GAME_END;
@@ -278,6 +298,8 @@ var stat = {
         else
             stat.paintHint(stat.curx, stat.cury);
         stat.player = 3 - stat.player;
+
+        PS.statusText("It's player "+ stat.player + "'s turn");
 
         return SUCCESS;
     }
