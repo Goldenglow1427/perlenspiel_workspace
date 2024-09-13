@@ -7,6 +7,7 @@ const CreditMessage = "Special thanks to Tom Geng'25 for helping with designing 
 // Color codes.
 const COLOR_RED = 0xDE7378;
 const COLOR_BLUE = 0x73DED9;
+const COLOR_GRAY = 0xababab;
 
 const COLOR_DARK_RED = 0x811E23;
 const COLOR_DARK_BLUE = 0x1E817D;
@@ -85,6 +86,8 @@ var stat = {
             color = COLOR_BLUE;
         else if(value == 2)
             color = COLOR_RED;
+        else if(value == 3)
+            color = COLOR_GRAY;
 
         for(let i=0; i<=2; i++)
             for(let j=0; j<=2; j++)
@@ -126,6 +129,15 @@ var stat = {
             stat.result[x][y] = stat.map[X][Y];
         if(check(stat.map[X+2][Y], stat.map[X+1][Y+1], stat.map[X][Y+2]))
             stat.result[x][y] = stat.map[X+2][Y];
+
+        var cnt = 0;
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                if(stat.map[X+i][Y+j] != 0)
+                    cnt++;
+
+        if(cnt == 9 && stat.result[x][y] == 0)
+            stat.result[x][y] = 3;
 
         stat.paint(x, y, stat.result[x][y]);
 
