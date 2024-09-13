@@ -2,6 +2,9 @@
  * Features to add:
  * - record(): mostly for debug, record the steps in local file for further check;
  * - Bottom status bar for team color, team scores, and restart the game;
+ * - Toggle for the color hinting;
+ * - Add a tutorial for the game, so it's easier for the beginners to play;
+ * - Modify the cover image (cover.png);
  */
 
 
@@ -14,10 +17,13 @@ const CreditMessage = "Special thanks to Tom Geng'25 for helping with designing 
 // Color codes.
 const COLOR_RED = 0xDE7378;
 const COLOR_BLUE = 0x73DED9;
-const COLOR_GRAY = 0xababab;
+const COLOR_GRAY = 0xABABAB;
 
 const COLOR_DARK_RED = 0x811E23;
 const COLOR_DARK_BLUE = 0x1E817D;
+
+const COLOR_YELLOW = 0xFFFB6F;
+const COLOR_DARK_YELLOW = 0xFFDF98;
 
 const STEP_DEBUG = true; // Yield debugging message in each steps in the procedure.
 const FUNCTION_DEBUG = true; // Yield debugging message for the return value of functions.
@@ -195,7 +201,12 @@ var stat = {
         for(let i=0; i<=2; i++)
             for(let j=0; j<=2; j++)
                 if(stat.map[x+i][y+j] == 0)
-                    PS.color(x+i, y+j, PS.COLOR_YELLOW);
+                {
+                    if(stat.result[i][j] == 0)
+                        PS.color(x+i, y+j, COLOR_YELLOW);
+                    else
+                        PS.color(x+i, y+j, COLOR_DARK_YELLOW);
+                }
     },
 
     paintHintAll: function()
