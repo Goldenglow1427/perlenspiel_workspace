@@ -25,6 +25,9 @@ const COLOR_DARK_BLUE = 0x1E817D;
 const COLOR_YELLOW = 0xFFFB6F;
 const COLOR_DARK_YELLOW = 0xFFDF98;
 
+const COLOR_LIGHT_GRAY = 0xDCDCDC;
+const COLOR_DARK_GRAY = 0x979797;
+
 const STEP_DEBUG = true; // Yield debugging message in each steps in the procedure.
 const FUNCTION_DEBUG = true; // Yield debugging message for the return value of functions.
 
@@ -35,8 +38,21 @@ const GAME_END = 2;
 const OverallWidth = 9;
 const OverallHeight = 9;
 
-const EdgeThickness = 5;
+const EdgeThickness = 2;
 const DefaultThickness = 1;
+
+const thick_top_edge = {
+    top: 2*EdgeThickness
+};
+const thick_left_edge = {
+    left: 2*EdgeThickness
+};
+const thick_bot_edge = {
+    bottom: 2*EdgeThickness
+};
+const thick_right_edge = {
+    right: 2*EdgeThickness
+};
 
 const top_edge = {
     top: EdgeThickness
@@ -72,6 +88,8 @@ var stat = {
     curx: -1,
     cury: -1,
     winner: 0,
+    score1: 0,
+    score2: 0,
 
     // Functions
 
@@ -88,6 +106,8 @@ var stat = {
 
         // PS.debug(stat.map[8][8]);
         stat.curx = stat.cury = -1;
+
+        stat.score1 = stat.score2 = 0;
 
         PS.statusText("It's player "+ stat.player + "'s turn");        
     },
@@ -153,6 +173,11 @@ var stat = {
 
         if(cnt == 9 && stat.result[x][y] == 0)
             stat.result[x][y] = 3;
+
+        if(stat.result[x][y] == 1)
+            stat.score1++;
+        else if(stat.result[x][y] == 2)
+            stat.score2++;
 
         stat.paint(x, y, stat.result[x][y]);
 
@@ -233,6 +258,28 @@ var stat = {
             return false;
     },
 
+    switchToPlayer: function(x)
+    {
+        PS.color(0, 9, COLOR_LIGHT_GRAY);
+        PS.color(8, 9, COLOR_LIGHT_GRAY);
+
+        PS.glyphColor(0, 9, COLOR_DARK_GRAY);
+        PS.glyphColor(8, 9, COLOR_DARK_GRAY);
+        
+        if(x == 1)
+        {
+            PS.color(0, 9, COLOR_BLUE);
+            // PS.glyph(0, 9, 'O');
+            PS.glyphColor(0, 9, COLOR_DARK_BLUE);
+        }
+        if(x == 2)
+        {
+            PS.color(8, 9, COLOR_RED);
+            // PS.glyph(8, 9, 'X');
+            PS.glyphColor(8, 9, COLOR_DARK_RED);
+        }
+    },
+
     /*
     The onClick(x, y) function updates a click on a tile.
     */
@@ -287,6 +334,9 @@ var stat = {
             PS.glyphColor(x, y, COLOR_DARK_RED);
         }
 
+        PS.glyph(1, 9, String(stat.score1));
+        PS.glyph(7, 9, String(stat.score2));
+
         if(stat.isValidCell(x%3, y%3))
             stat.curx = x%3, stat.cury = y%3;
         else
@@ -310,25 +360,57 @@ var stat = {
             stat.paintHint(stat.curx, stat.cury);
         stat.player = 3 - stat.player;
 
-        PS.statusText("It's player "+ stat.player + "'s turn");
+        // PS.statusText("It's player "+ stat.player + "'s turn");
+        stat.switchToPlayer(stat.player);
 
         return SUCCESS;
     }
 }
 
 PS.init = function( system, options ) {
-	PS.gridSize(9, 9);
+	PS.gridSize(9, 10);
 
     for(let i=0; i<9; i++)
     {
         for(let j=0; j<=6; j+=3)
+        {
             PS.border(i, j, top_edge);
-        PS.border(i, 8, bot_edge);
+            PS.border(j, i, left_edge);
+        }
 
         for(let j=2; j<=8; j+=3)
+        {
             PS.border(j, i, right_edge);
-        PS.border(0, i, left_edge);
+            PS.border(i, j, bot_edge);
+        }
+        // PS.border(0, i, left_edge);
     }
+
+    for(let i=0; i<9; i++)
+    {
+        PS.border(i, 0, thick_top_edge);
+        PS.border(i, 9, thick_bot_edge);
+        PS.border(i, 9, top_edge);
+    }
+    for(let i=0; i<10; i++)
+    {
+        PS.border(0, i, thick_left_edge);
+        PS.border(8, i, thick_right_edge);
+    }
+
+    PS.color(0, 9, COLOR_BLUE);
+    PS.glyph(0, 9, 'O');
+    PS.glyphColor(0, 9, COLOR_DARK_BLUE);
+
+    PS.color(8, 9, COLOR_RED);
+    PS.glyph(8, 9, 'X');
+    PS.glyphColor(8, 9, COLOR_DARK_RED);
+
+    PS.glyph(1, 9, String(stat.score1));
+    PS.glyphColor(1, 9, COLOR_DARK_BLUE);
+
+    PS.glyph(7, 9, String(stat.score2));
+    PS.glyphColor(7, 9, COLOR_DARK_RED);
 
     if(STEP_DEBUG)
         PS.debug("Successfully built the border!\n");
@@ -336,11 +418,27 @@ PS.init = function( system, options ) {
     PS.debug(CreditMessage);
 
     stat.setup();
+
+    stat.switchToPlayer(1);
+
+    PS.debug("Finish offline setup!");
+
+    PS.audioLoad("fx_click");
+
+    PS.debug("Finish loading audios!");
 };
 
 
-PS.touch = function( x, y, data, options ) {
-	stat.onClick(x, y);
+PS.touch = function( x, y, data, options )
+{
+    PS.audioPlay("fx_click");
+
+    if(y <= 8)
+    	stat.onClick(x, y);
+    else
+    {
+        PS.debug("Warning from PS.touch: Invalid move - on settings bar.");
+    }
 };
 
 /*
