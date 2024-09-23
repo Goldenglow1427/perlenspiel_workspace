@@ -15,6 +15,8 @@
 const CreditMessage = "Special thanks to Tom Geng'25 for helping with designing the artistic elements in this game :)\n";
 
 // Color codes.
+const COLOR_WHITE = 0x000000;
+
 const COLOR_RED = 0xDE7378;
 const COLOR_BLUE = 0x73DED9;
 const COLOR_GRAY = 0xABABAB;
@@ -81,6 +83,15 @@ const check = function(v1, v2, v3)
         return 0;
 };
 
+var controller = {
+    stage: 0
+    /*
+    0 means in the default screen.
+    1 means in the game.
+    2 means in the setting page.
+    */
+}
+
 var stat = {
     player: 0,
     map: [],
@@ -109,7 +120,7 @@ var stat = {
 
         stat.score1 = stat.score2 = 0;
 
-        PS.statusText("It's player "+ stat.player + "'s turn");        
+        PS.statusText("Ultimate Tic-Tac-Toe");        
     },
 
     paint: function(x, y, value)
@@ -351,6 +362,9 @@ var stat = {
         else if(stat.winner != 0)
         {
             PS.statusText("Congradulations to player " + stat.winner + " for winning!");
+
+            winDisplay();
+
             return GAME_END;
         }
 
@@ -367,9 +381,64 @@ var stat = {
     }
 }
 
-PS.init = function( system, options ) {
-	PS.gridSize(9, 10);
+function checkWinningStatus()
+{
+    if(check(stat.result[0][0], stat.result[0][1], stat.result[0][2]))
+        return 210;
+    if(check(stat.result[1][0], stat.result[1][1], stat.result[1][2]))
+        return 543;
+    if(check(stat.result[2][0], stat.result[2][1], stat.result[2][2]))
+        return 876;
 
+    if(check(stat.result[0][0], stat.result[1][0], stat.result[2][0]))
+        return 630;
+    if(check(stat.result[0][1], stat.result[1][1], stat.result[2][1]))
+        return 741;
+    if(check(stat.result[0][2], stat.result[1][2], stat.result[2][2]))
+        return 852;
+
+    if(check(stat.result[0][0], stat.result[1][1], stat.result[2][2]))
+        return 840;
+    if(check(stat.result[0][2], stat.result[1][1], stat.result[2][0]))
+        return 642;
+
+    return 0;
+}
+
+var targetTiles = 0;
+var remainingTiles = 3;
+
+var tileShineTimer = PS.DEFAULT;
+
+function winDisplay()
+{
+    // targetTiles = checkWinningStatus();
+    targetTiles = 210;
+    remainingTiles = 3;
+
+    tileShineTimer = PS.timerStart(60, displayShine);
+}
+function displayShine()
+{
+    PS.debug("Check");
+
+    if(remainingTiles == 0)
+    {
+        PS.timerStop(tileShineTimer);
+        return;
+    }
+
+    var cury = Math.floor((targetTiles%10)/3), curx = (targetTiles%10)%3;
+    
+    PS.debug("curx = " + curx + ", cury = " + cury + "\n");
+    PS.color(curx, cury, COLOR_DARK_BLUE);
+
+    targetTiles = Math.floor(targetTiles/10);
+    remainingTiles--;
+}
+
+function setupGame() {
+    PS.gridSize(9, 10);
     for(let i=0; i<9; i++)
     {
         for(let j=0; j<=6; j+=3)
@@ -412,32 +481,61 @@ PS.init = function( system, options ) {
     PS.glyph(7, 9, String(stat.score2));
     PS.glyphColor(7, 9, COLOR_DARK_RED);
 
-    if(STEP_DEBUG)
-        PS.debug("Successfully built the border!\n");
-
-    PS.debug(CreditMessage);
+    PS.glyph(4, 9, 0x2699);
 
     stat.setup();
-
     stat.switchToPlayer(1);
 
-    PS.debug("Finish offline setup!");
+    winDisplay();
+};
 
+function setupHomePage()
+{
+    paintLine("Tutorial", 1, 1);
+    PS.glyph(16, 1, 0x2386);
+
+    paintLine("New Game", 1, 2);
+    PS.glyph(16, 2, 0x2386);
+};
+
+function paintLine(st, x, y)
+{
+    for(let i=0; i<st.length; i++)
+        PS.glyph(x++, y, st[i]);
+}
+
+PS.init = function( system, options ) {
+    // PS.glyphScale(4, 9, 100000);
+    PS.debug(CreditMessage);
+    PS.statusText("Ultimate Tic-Tac-Toe");
+    
     PS.audioLoad("fx_click");
-
     PS.debug("Finish loading audios!");
+
+    PS.gridSize(20, 20);
+
+    setupHomePage();
 };
 
 
 PS.touch = function( x, y, data, options )
 {
-    PS.audioPlay("fx_click");
-
-    if(y <= 8)
-    	stat.onClick(x, y);
-    else
+    if(controller.stage == 0)
     {
-        PS.debug("Warning from PS.touch: Invalid move - on settings bar.");
+        setupGame();
+
+        controller.stage = 1;
+    }
+    else if(controller.stage == 1)
+    {
+        PS.audioPlay("fx_click");
+
+        if(y <= 8)
+            stat.onClick(x, y);
+        else
+        {
+            PS.debug("Warning from PS.touch: Invalid move - on settings bar.");
+        }
     }
 };
 
