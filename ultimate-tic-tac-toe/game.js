@@ -12,6 +12,8 @@
 
 "use strict"; // Do NOT remove this directive!
 
+var DEVELOPER_MODE = false;
+
 const CreditMessage = "Special thanks to Tom Geng'25 for helping with designing the artistic elements in this game :)\n";
 
 // Color codes.
@@ -34,6 +36,9 @@ const STEP_DEBUG = false; // Yield debugging message in each steps in the proced
 const FUNCTION_DEBUG = false; // Yield debugging message for the return value of functions.
 
 const WARN_INVALID_MOVE = -1;
+const WARN_INVALID_METHOD_CALL = -2;
+
+const SKIPPED = 0;
 const SUCCESS = 1;
 const GAME_END = 2;
 
@@ -83,29 +88,45 @@ const check = function(v1, v2, v3)
         return 0;
 };
 
-var controller = {
-    stage: 0
-    /*
-    0 means in the default screen.
-    1 means in the game.
-    2 means in the setting page.
-    */
-}
-
 const HOME = 10;
 const IN_GAME = 20;
 
+const findTile = function(x)
+{
+    return Math.floor(x/3);
+}
+
 class GraphicsClass
 {
+    logicControl; // Means the logical class.
+
     constructor()
     {
-        this.mode = HOME;
+        if(DEVELOPER_MODE)
+            this.logicControl = new LogicClass();
+    }
+
+    pairLogicalControl(logic)
+    {
+        this.logicControl = logic;
     }
 
     findColor(x, y)
     {
         return PS.color(y, x);
     };
+
+    setupHomePage()
+    {
+        PS.gridSize(20, 20);
+        PS.statusText("Ultimate Tic-Tac-Toe");
+
+        paintLine("Tutorial", 1, 1);
+        PS.glyph(16, 1, 0x2386);
+
+        paintLine("New Game", 1, 2);
+        PS.glyph(16, 2, 0x2386);
+    }
     
     // Setup the game interface.
     setupGame()
@@ -147,7 +168,7 @@ class GraphicsClass
         PS.glyph(8, 9, 'X');
         PS.glyphColor(8, 9, COLOR_DARK_RED);
 
-        PS.glyph(1, 9, String(stat.score1));
+        PS.glyph(1, 9, '0');
         PS.glyphColor(1, 9, COLOR_DARK_BLUE);
 
         PS.glyph(7, 9, String(stat.score2));
@@ -155,9 +176,286 @@ class GraphicsClass
 
         PS.glyph(4, 9, 0x2699);
     }
+
+    playerMove(x, y, p)
+    {
+        if(p == 1)
+        {
+            PS.glyph(y, x, 'O');
+            PS.glyphColor(y, x, COLOR_DARK_BLUE);
+        }
+        else if(p == 2)
+        {
+            PS.glyph(y, x, 'X');
+            PS.glyphColor(y, x, COLOR_DARK_RED);
+        }
+    }
+
+    // Color the tile (x, y) based on the winner.
+    colorTile(x, y)
+    {
+        var col;
+        if(this.logicControl.result[x][y] == 1)
+            col = COLOR_BLUE;
+        else if(this.logicControl.result[x][y] == 2)
+            col = COLOR_RED;
+        else
+            col = COLOR_WHITE;
+
+        x = [y, y=x][0];
+        x *= 3, y *= 3;
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                PS.color(x+i, y+j, col);
+    }
+
+    // Paint hint on tile (x, y).
+    paintHint(x, y)
+    {
+        if(this.logicControl.currentPage != IN_GAME)
+        {
+            PS.debug("Cannot invoke paintHint(x, y) when not in game.");
+            return WARN_INVALID_METHOD_CALL;
+        }
+
+        if(this.logicControl.result[x][y] != 0)
+            return SKIPPED;
+
+        x *= 3, y *= 3;
+
+        y = [x, x=y][0];
+
+        for(let i=0; i<=2; i++)
+            for(let j=0; j<=2; j++)
+                if(this.logicControl.map[y+j][x+i] == 0)
+                {
+                    if(this.logicControl.result[j][i] == 0)
+                        PS.color(x+i, y+j, COLOR_YELLOW);
+                    else
+                        PS.color(x+i, y+j, COLOR_DARK_YELLOW);
+                }
+        
+        return SUCCESS;
+    }
+
+    // Change to player x's turn.
+    onPlayer(x)
+    {
+        if(this.logicControl.currentPage != IN_GAME)
+        {
+            PS.debug("Cannot invoke onPlayer() when not in game.");
+            return WARN_INVALID_METHOD_CALL;
+        }
+
+        PS.color(0, 9, COLOR_LIGHT_GRAY);
+        PS.color(8, 9, COLOR_LIGHT_GRAY);
+
+        PS.glyphColor(0, 9, COLOR_DARK_GRAY);
+        PS.glyphColor(8, 9, COLOR_DARK_GRAY);
+        
+        if(x == 1)
+        {
+            PS.color(0, 9, COLOR_BLUE);
+            // PS.glyph(0, 9, 'O');
+            PS.glyphColor(0, 9, COLOR_DARK_BLUE);
+        }
+        if(x == 2)
+        {
+            PS.color(8, 9, COLOR_RED);
+            // PS.glyph(8, 9, 'X');
+            PS.glyphColor(8, 9, COLOR_DARK_RED);
+        }
+
+        return SUCCESS;
+    }
+
+    updateHints()
+    {
+        for(let i=0; i<9; i++)
+            for(let j=0; j<9; j++)
+                if(this.logicControl.result[findTile(i)][findTile(j)] == 0)
+                    PS.color(j, i, COLOR_WHITE);
+        
+        if(this.logicControl.xTile == -1)
+        {
+            for(let i=0; i<3; i++)
+                for(let j=0; j<3; j++)
+                    this.paintHint(i, j);
+        }
+        else
+            this.paintHint(this.logicControl.xTile, this.logicControl.yTile);
+    }
+
+    updateScores()
+    {
+        PS.glyph(1, 9, String(this.logicControl.player1Score));
+        PS.glyph(7, 9, String(this.logicControl.player2Score));
+    }
 };
 
-var graphicControl = new GraphicsClass();
+class LogicClass
+{
+    graphicControl; // Graphical control related to this logical class.
+
+    currentPage; // The stage that the GUI should be at.
+
+    player; // The current player.
+    map;
+    result;
+
+    score1;
+    score2;
+
+    curXTile;
+    curYTile;
+
+    winner; // Winner of the game.
+
+    get player1Score()
+    {
+        return this.score1;
+    }
+    get player2Score()
+    {
+        return this.score2;
+    }
+
+    get xTile()
+    {
+        return this.curXTile;
+    }
+    get yTile()
+    {
+        return this.curYTile;
+    }
+
+    constructor()
+    {
+        this.graphicControl = new GraphicsClass();
+        this.graphicControl.pairLogicalControl(this);
+
+        this.currentPage = HOME;
+    }
+
+    // To initialize everything at home page.
+    initialize()
+    {
+        this.graphicControl.setupHomePage();
+    }
+
+    // To setup a new game.
+    startNewGame()
+    {
+        this.graphicControl.setupGame();
+
+        this.player = 1;
+        this.graphicControl.onPlayer(1);
+
+        this.map = new Array(9).fill(0).map(() => new Array(9).fill(0));
+        this.result = new Array(3).fill(0).map(() => new Array(3).fill(0));
+
+        this.curXTile = this.curYTile = -1;
+        this.graphicControl.updateHints();
+
+        this.score1 = this.score2 = 0;
+        this.graphicControl.updateScores();
+
+        this.winner = 0;
+    }
+
+    // Check if in a tile there's a winner.
+    checkWinTile(x, y)
+    {
+        if(this.result[x][y] != 0)
+            return this.result[x][y];
+
+        var X = 3*x, Y = 3*y;
+
+        if(check(this.map[X][Y], this.map[X][Y+1], this.map[X][Y+2]))
+            this.result[x][y] = this.map[X][Y];
+        if(check(this.map[X+1][Y], this.map[X+1][Y+1], this.map[X+1][Y+2]))
+            this.result[x][y] = this.map[X+1][Y];
+        if(check(this.map[X+2][Y], this.map[X+2][Y+1], this.map[X+2][Y+2]))
+            this.result[x][y] = this.map[X+2][Y];
+
+        if(check(this.map[X][Y], this.map[X+1][Y], this.map[X+2][Y]))
+            this.result[x][y] = this.map[X][Y];
+        if(check(this.map[X][Y+1], this.map[X+1][Y+1], this.map[X+2][Y+1]))
+            this.result[x][y] = this.map[X][Y+1];
+        if(check(this.map[X][Y+2], this.map[X+1][Y+2], this.map[X+2][Y+2]))
+            this.result[x][y] = this.map[X][Y+2];
+
+        if(check(this.map[X][Y], this.map[X+1][Y+1], this.map[X+2][Y+2]))
+            this.result[x][y] = this.map[X][Y];
+        if(check(this.map[X+2][Y], this.map[X+1][Y+1], this.map[X][Y+2]))
+            this.result[x][y] = this.map[X+2][Y];
+
+        var cnt = 0;
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                if(this.map[X+i][Y+j] != 0)
+                    cnt++;
+
+        if(cnt == 9 && this.result[x][y] == 0)
+            this.result[x][y] = 3;
+
+        if(this.result[x][y] == 1)
+            this.score1++;
+        else if(this.result[x][y] == 2)
+            this.score2++;
+
+        this.graphicControl.colorTile(x, y);
+
+        return this.result[x][y];
+    }
+
+    // Perform a move at a certain tile (in game).
+    inGame_move(x, y)
+    {
+        var xTile = findTile(x);
+        var yTile = findTile(y);
+
+        if(this.map[x][y] != 0)
+            return WARN_INVALID_MOVE;
+        if(this.result[xTile][yTile] != 0)
+            return WARN_INVALID_MOVE;
+        if(this.winner != 0)
+            return WARN_INVALID_MOVE;
+
+        this.map[x][y] = this.player;
+        this.checkWinTile(xTile, yTile);
+
+        this.curXTile = x % 3;
+        this.curYTile = y % 3;
+        if(this.result[this.curXTile][this.curYTile] != 0)
+            this.curXTile = this.curYTile = -1;
+
+        this.player = 3 - this.player;
+
+        this.graphicControl.playerMove(x, y, 3-this.player);
+        this.graphicControl.onPlayer(this.player);
+        this.graphicControl.updateHints();
+        this.graphicControl.updateScores();
+    }
+
+    // Main function: react when being clicked on (x, y).
+    onClick(x, y)
+    {
+        y = [x, x=y][0];
+
+        if(this.currentPage == HOME)
+        {
+            this.currentPage = IN_GAME;
+            this.startNewGame();
+        }
+        else if(this.currentPage == IN_GAME)
+        {
+            this.inGame_move(x, y);
+        }
+    }
+};
+
+var logicControl = new LogicClass();
 
 var stat = {
     player: 0,
@@ -188,23 +486,6 @@ var stat = {
         stat.score1 = stat.score2 = 0;
 
         PS.statusText("Ultimate Tic-Tac-Toe");        
-    },
-
-    paint: function(x, y, value)
-    {
-        x *= 3, y *= 3;
-
-        var color = PS.COLOR_WHITE;
-        if(value == 1)
-            color = COLOR_BLUE;
-        else if(value == 2)
-            color = COLOR_RED;
-        else if(value == 3)
-            color = COLOR_GRAY;
-
-        for(let i=0; i<=2; i++)
-            for(let j=0; j<=2; j++)
-                PS.color(x+i, y+j, color);
     },
 
     paintall: function()
@@ -294,24 +575,6 @@ var stat = {
         return 0;
     },
 
-    paintHint: function(x, y)
-    {
-        if(stat.result[x][y] != 0)
-            return;
-
-        x *= 3, y *= 3;
-
-        for(let i=0; i<=2; i++)
-            for(let j=0; j<=2; j++)
-                if(stat.map[x+i][y+j] == 0)
-                {
-                    if(stat.result[i][j] == 0)
-                        PS.color(x+i, y+j, COLOR_YELLOW);
-                    else
-                        PS.color(x+i, y+j, COLOR_DARK_YELLOW);
-                }
-    },
-
     paintHintAll: function()
     {
         for(let i=0; i<3; i++)
@@ -334,28 +597,6 @@ var stat = {
             return true;
         else
             return false;
-    },
-
-    switchToPlayer: function(x)
-    {
-        PS.color(0, 9, COLOR_LIGHT_GRAY);
-        PS.color(8, 9, COLOR_LIGHT_GRAY);
-
-        PS.glyphColor(0, 9, COLOR_DARK_GRAY);
-        PS.glyphColor(8, 9, COLOR_DARK_GRAY);
-        
-        if(x == 1)
-        {
-            PS.color(0, 9, COLOR_BLUE);
-            // PS.glyph(0, 9, 'O');
-            PS.glyphColor(0, 9, COLOR_DARK_BLUE);
-        }
-        if(x == 2)
-        {
-            PS.color(8, 9, COLOR_RED);
-            // PS.glyph(8, 9, 'X');
-            PS.glyphColor(8, 9, COLOR_DARK_RED);
-        }
     },
 
     /*
@@ -539,15 +780,6 @@ function setupGame() {
     // winDisplay();
 };
 
-function setupHomePage()
-{
-    paintLine("Tutorial", 1, 1);
-    PS.glyph(16, 1, 0x2386);
-
-    paintLine("New Game", 1, 2);
-    PS.glyph(16, 2, 0x2386);
-};
-
 function paintLine(st, x, y)
 {
     for(let i=0; i<st.length; i++)
@@ -557,36 +789,17 @@ function paintLine(st, x, y)
 PS.init = function( system, options ) {
     // PS.glyphScale(4, 9, 100000);
     PS.debug(CreditMessage);
-    PS.statusText("Ultimate Tic-Tac-Toe");
     
     PS.audioLoad("fx_click");
     PS.debug("Finish loading audios!");
 
-    PS.gridSize(20, 20);
-
-    setupHomePage();
+    logicControl.initialize();
 };
 
 
 PS.touch = function( x, y, data, options )
 {
-    if(controller.stage == 0)
-    {
-        setupGame();
-
-        controller.stage = 1;
-    }
-    else if(controller.stage == 1)
-    {
-        PS.audioPlay("fx_click");
-
-        if(y <= 8)
-            stat.onClick(x, y);
-        else
-        {
-            PS.debug("Warning from PS.touch: Invalid move - on settings bar.");
-        }
-    }
+    logicControl.onClick(x, y);
 };
 
 /*
