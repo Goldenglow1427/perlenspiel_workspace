@@ -15,7 +15,7 @@
 const CreditMessage = "Special thanks to Tom Geng'25 for helping with designing the artistic elements in this game :)\n";
 
 // Color codes.
-const COLOR_WHITE = 0x000000;
+const COLOR_WHITE = 0xFFFFFF;
 
 const COLOR_RED = 0xDE7378;
 const COLOR_BLUE = 0x73DED9;
@@ -406,15 +406,33 @@ function checkWinningStatus()
 }
 
 var targetTiles = 0;
-var remainingTiles = 3;
+var remainingTimes = 0;
 
 var tileShineTimer = PS.DEFAULT;
 
+var currentColor = 0;
+var defaultColor = COLOR_WHITE;
+
 function winDisplay()
 {
-    // targetTiles = checkWinningStatus();
-    targetTiles = 210;
-    remainingTiles = 3;
+    targetTiles = checkWinningStatus();
+    // targetTiles = 210;
+    remainingTimes = 7;
+
+    currentColor = 0;
+
+    for(let i=targetTiles, j=0; j<3; j++, i=Math.floor(i/10))
+    {
+        let cury = (i%10)%3, curx = Math.floor((i%10)/3);
+
+        defaultColor = PS.color(curx*3, cury*3);
+
+        for(let xi=0; xi<=2; xi++)
+            for(let yi=0; yi<=2; yi++)
+                PS.fade(curx*3+xi, cury*3+yi, 30);
+    }
+
+    // defaultColor = COLOR_DARK_BLUE;
 
     tileShineTimer = PS.timerStart(60, displayShine);
 }
@@ -422,19 +440,26 @@ function displayShine()
 {
     PS.debug("Check");
 
-    if(remainingTiles == 0)
+    if(remainingTimes == 0)
     {
         PS.timerStop(tileShineTimer);
         return;
     }
-
-    var cury = Math.floor((targetTiles%10)/3), curx = (targetTiles%10)%3;
     
-    PS.debug("curx = " + curx + ", cury = " + cury + "\n");
-    PS.color(curx, cury, COLOR_DARK_BLUE);
+    for(let i=targetTiles, j=0; j<3; j++, i=Math.floor(i/10))
+    {
+        let cury = (i%10)%3, curx = Math.floor((i%10)/3);
+        for(let xi=0; xi<=2; xi++)
+            for(let yi=0; yi<=2; yi++)
+                if(currentColor == 0)
+                    PS.color(curx*3+xi, cury*3+yi, defaultColor);
+                else
+                    PS.color(curx*3+xi, cury*3+yi, COLOR_WHITE);
+    }
 
-    targetTiles = Math.floor(targetTiles/10);
-    remainingTiles--;
+    currentColor = 1 - currentColor;
+
+    remainingTimes--;
 }
 
 function setupGame() {
@@ -486,7 +511,7 @@ function setupGame() {
     stat.setup();
     stat.switchToPlayer(1);
 
-    winDisplay();
+    // winDisplay();
 };
 
 function setupHomePage()
