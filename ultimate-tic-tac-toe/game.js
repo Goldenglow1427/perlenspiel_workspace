@@ -30,8 +30,8 @@ const COLOR_DARK_YELLOW = 0xFFDF98;
 const COLOR_LIGHT_GRAY = 0xDCDCDC;
 const COLOR_DARK_GRAY = 0x979797;
 
-const STEP_DEBUG = true; // Yield debugging message in each steps in the procedure.
-const FUNCTION_DEBUG = true; // Yield debugging message for the return value of functions.
+const STEP_DEBUG = false; // Yield debugging message in each steps in the procedure.
+const FUNCTION_DEBUG = false; // Yield debugging message for the return value of functions.
 
 const WARN_INVALID_MOVE = -1;
 const SUCCESS = 1;
@@ -43,6 +43,7 @@ const OverallHeight = 9;
 const EdgeThickness = 2;
 const DefaultThickness = 1;
 
+// About the edges definition.
 const thick_top_edge = {
     top: 2*EdgeThickness
 };
@@ -74,7 +75,6 @@ const general_tile = {
     bottom: DefaultThickness,
     right: DefaultThickness
 };
-
 const check = function(v1, v2, v3)
 {
     if(v1 == v2 && v2 == v3 && v3 != 0)
@@ -91,6 +91,73 @@ var controller = {
     2 means in the setting page.
     */
 }
+
+const HOME = 10;
+const IN_GAME = 20;
+
+class GraphicsClass
+{
+    constructor()
+    {
+        this.mode = HOME;
+    }
+
+    findColor(x, y)
+    {
+        return PS.color(y, x);
+    };
+    
+    // Setup the game interface.
+    setupGame()
+    {
+        PS.gridSize(9, 10);
+        for(let i=0; i<9; i++)
+        {
+            for(let j=0; j<=6; j+=3)
+            {
+                PS.border(i, j, top_edge);
+                PS.border(j, i, left_edge);
+            }
+
+            for(let j=2; j<=8; j+=3)
+            {
+                PS.border(j, i, right_edge);
+                PS.border(i, j, bot_edge);
+            }
+            // PS.border(0, i, left_edge);
+        }
+
+        for(let i=0; i<9; i++)
+        {
+            PS.border(i, 0, thick_top_edge);
+            PS.border(i, 9, thick_bot_edge);
+            PS.border(i, 9, top_edge);
+        }
+        for(let i=0; i<10; i++)
+        {
+            PS.border(0, i, thick_left_edge);
+            PS.border(8, i, thick_right_edge);
+        }
+
+        PS.color(0, 9, COLOR_BLUE);
+        PS.glyph(0, 9, 'O');
+        PS.glyphColor(0, 9, COLOR_DARK_BLUE);
+
+        PS.color(8, 9, COLOR_RED);
+        PS.glyph(8, 9, 'X');
+        PS.glyphColor(8, 9, COLOR_DARK_RED);
+
+        PS.glyph(1, 9, String(stat.score1));
+        PS.glyphColor(1, 9, COLOR_DARK_BLUE);
+
+        PS.glyph(7, 9, String(stat.score2));
+        PS.glyphColor(7, 9, COLOR_DARK_RED);
+
+        PS.glyph(4, 9, 0x2699);
+    }
+};
+
+var graphicControl = new GraphicsClass();
 
 var stat = {
     player: 0,
@@ -463,50 +530,8 @@ function displayShine()
 }
 
 function setupGame() {
-    PS.gridSize(9, 10);
-    for(let i=0; i<9; i++)
-    {
-        for(let j=0; j<=6; j+=3)
-        {
-            PS.border(i, j, top_edge);
-            PS.border(j, i, left_edge);
-        }
 
-        for(let j=2; j<=8; j+=3)
-        {
-            PS.border(j, i, right_edge);
-            PS.border(i, j, bot_edge);
-        }
-        // PS.border(0, i, left_edge);
-    }
-
-    for(let i=0; i<9; i++)
-    {
-        PS.border(i, 0, thick_top_edge);
-        PS.border(i, 9, thick_bot_edge);
-        PS.border(i, 9, top_edge);
-    }
-    for(let i=0; i<10; i++)
-    {
-        PS.border(0, i, thick_left_edge);
-        PS.border(8, i, thick_right_edge);
-    }
-
-    PS.color(0, 9, COLOR_BLUE);
-    PS.glyph(0, 9, 'O');
-    PS.glyphColor(0, 9, COLOR_DARK_BLUE);
-
-    PS.color(8, 9, COLOR_RED);
-    PS.glyph(8, 9, 'X');
-    PS.glyphColor(8, 9, COLOR_DARK_RED);
-
-    PS.glyph(1, 9, String(stat.score1));
-    PS.glyphColor(1, 9, COLOR_DARK_BLUE);
-
-    PS.glyph(7, 9, String(stat.score2));
-    PS.glyphColor(7, 9, COLOR_DARK_RED);
-
-    PS.glyph(4, 9, 0x2699);
+    graphicControl.setupGame();
 
     stat.setup();
     stat.switchToPlayer(1);
