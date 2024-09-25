@@ -75,6 +75,13 @@ const general_tile = {
     bottom: DefaultThickness,
     right: DefaultThickness
 };
+const empty_right_tile = {
+    right: 0
+};
+const empty_left_tile = {
+    left: 0
+};
+
 const check = function(v1, v2, v3)
 {
     if(v1 == v2 && v2 == v3 && v3 != 0)
@@ -541,17 +548,24 @@ function setupGame() {
 
 function setupHomePage()
 {
-    paintLine("Tutorial", 1, 1);
-    PS.glyph(16, 1, 0x2386);
+    // paintLine("Tutorial", 1, 1);
+    // PS.glyph(16, 1, 0x2386);
 
-    paintLine("New Game", 1, 2);
-    PS.glyph(16, 2, 0x2386);
+    paintLine("New Game       ", 1, 1);
+    PS.glyph(18, 1, 0x2386);
 };
 
 function paintLine(st, x, y)
 {
     for(let i=0; i<st.length; i++)
-        PS.glyph(x++, y, st[i]);
+    {
+        PS.glyph(x, y, st[i]);
+        if(i != 0)
+            PS.border(x, y, empty_left_tile);
+        if(i != st.length-1)
+            PS.border(x, y, empty_right_tile);
+        x++;
+    }
 }
 
 PS.init = function( system, options ) {
@@ -562,7 +576,7 @@ PS.init = function( system, options ) {
     PS.audioLoad("fx_click");
     PS.debug("Finish loading audios!");
 
-    PS.gridSize(20, 20);
+    PS.gridSize(20, 3);
 
     setupHomePage();
 };
@@ -572,9 +586,12 @@ PS.touch = function( x, y, data, options )
 {
     if(controller.stage == 0)
     {
-        setupGame();
+        if(x == 18 && y == 1)
+        {
+            setupGame();
 
-        controller.stage = 1;
+            controller.stage = 1;
+        }
     }
     else if(controller.stage == 1)
     {
