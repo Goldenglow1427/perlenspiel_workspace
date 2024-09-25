@@ -171,7 +171,7 @@ class GraphicsClass
         PS.glyph(1, 9, '0');
         PS.glyphColor(1, 9, COLOR_DARK_BLUE);
 
-        PS.glyph(7, 9, String(stat.score2));
+        PS.glyph(7, 9, '0');
         PS.glyphColor(7, 9, COLOR_DARK_RED);
 
         PS.glyph(4, 9, 0x2699);
@@ -409,6 +409,38 @@ class LogicClass
         return this.result[x][y];
     }
 
+    checkWinGame()
+    {
+        if(check(this.result[0][0], this.result[0][1], this.result[0][2]))
+            return this.result[0][0];
+        if(check(this.result[1][0], this.result[1][1], this.result[1][2]))
+            return this.result[1][0];
+        if(check(this.result[2][0], this.result[2][1], this.result[2][2]))
+            return this.result[2][0];
+
+        if(check(this.result[0][0], this.result[1][0], this.result[2][0]))
+            return this.result[0][0];
+        if(check(this.result[0][1], this.result[1][1], this.result[2][1]))
+            return this.result[0][1];
+        if(check(this.result[0][2], this.result[1][2], this.result[2][2]))
+            return this.result[0][2];
+
+        if(check(this.result[0][0], this.result[1][1], this.result[2][2]))
+            return this.result[0][0];
+        if(check(this.result[0][2], this.result[1][1], this.result[2][0]))
+            return this.result[0][2];
+
+        var cnt = 0;
+        for(let i=0; i<3; i++)
+            for(let j=0; j<3; j++)
+                if(this.result[i][j] != 0)
+                    cnt++;
+        if(cnt == 9)
+            return 3;
+
+        return 0;
+    }
+
     // Perform a move at a certain tile (in game).
     inGame_move(x, y)
     {
@@ -424,18 +456,32 @@ class LogicClass
 
         this.map[x][y] = this.player;
         this.checkWinTile(xTile, yTile);
+        this.winner = this.checkWinGame();
 
         this.curXTile = x % 3;
         this.curYTile = y % 3;
         if(this.result[this.curXTile][this.curYTile] != 0)
             this.curXTile = this.curYTile = -1;
 
-        this.player = 3 - this.player;
+        this.graphicControl.playerMove(x, y, this.player);
+        this.graphicControl.updateScores();
+        if(this.winner != 0)
+        {
+            if(this.winner == 3)
+            {
+                PS.statusText("The game ends with a tie.");
+                return GAME_END;
+            }
+            else
+            {
+                PS.statusText("Congradulations to player " + this.winner + " for winning!");
+                return GAME_END;
+            }
+        }
 
-        this.graphicControl.playerMove(x, y, 3-this.player);
+        this.player = 3 - this.player;
         this.graphicControl.onPlayer(this.player);
         this.graphicControl.updateHints();
-        this.graphicControl.updateScores();
     }
 
     // Main function: react when being clicked on (x, y).
@@ -456,238 +502,6 @@ class LogicClass
 };
 
 var logicControl = new LogicClass();
-
-var stat = {
-    player: 0,
-    map: [],
-    result: [],
-    curx: -1,
-    cury: -1,
-    winner: 0,
-    score1: 0,
-    score2: 0,
-
-    // Functions
-
-    /*
-    The setup() function is for setting up the environment.
-    */
-    setup: function()
-    {
-        "use strict";
-
-        stat.player = 1;
-        stat.map = new Array(9).fill(0).map(() => new Array(9).fill(0));
-        stat.result = new Array(3).fill(0).map(() => new Array(3).fill(0));
-
-        // PS.debug(stat.map[8][8]);
-        stat.curx = stat.cury = -1;
-
-        stat.score1 = stat.score2 = 0;
-
-        PS.statusText("Ultimate Tic-Tac-Toe");        
-    },
-
-    paintall: function()
-    {
-        for(let i=0; i<3; i++)
-            for(let j=0; j<3; j++)
-                stat.paint(i, j, stat.result[i][j]);
-    },
-
-    /*
-    The checkwin() function checks if a cell has a winner, and update the results.
-    */
-    checkwin: function(x, y)
-    {
-        if(stat.result[x][y] != 0)
-            return stat.result[x][y];
-
-        var X = 3*x, Y = 3*y;
-
-        if(check(stat.map[X][Y], stat.map[X][Y+1], stat.map[X][Y+2]))
-            stat.result[x][y] = stat.map[X][Y];
-        if(check(stat.map[X+1][Y], stat.map[X+1][Y+1], stat.map[X+1][Y+2]))
-            stat.result[x][y] = stat.map[X+1][Y];
-        if(check(stat.map[X+2][Y], stat.map[X+2][Y+1], stat.map[X+2][Y+2]))
-            stat.result[x][y] = stat.map[X+2][Y];
-
-        if(check(stat.map[X][Y], stat.map[X+1][Y], stat.map[X+2][Y]))
-            stat.result[x][y] = stat.map[X][Y];
-        if(check(stat.map[X][Y+1], stat.map[X+1][Y+1], stat.map[X+2][Y+1]))
-            stat.result[x][y] = stat.map[X][Y+1];
-        if(check(stat.map[X][Y+2], stat.map[X+1][Y+2], stat.map[X+2][Y+2]))
-            stat.result[x][y] = stat.map[X][Y+2];
-
-        if(check(stat.map[X][Y], stat.map[X+1][Y+1], stat.map[X+2][Y+2]))
-            stat.result[x][y] = stat.map[X][Y];
-        if(check(stat.map[X+2][Y], stat.map[X+1][Y+1], stat.map[X][Y+2]))
-            stat.result[x][y] = stat.map[X+2][Y];
-
-        var cnt = 0;
-        for(let i=0; i<3; i++)
-            for(let j=0; j<3; j++)
-                if(stat.map[X+i][Y+j] != 0)
-                    cnt++;
-
-        if(cnt == 9 && stat.result[x][y] == 0)
-            stat.result[x][y] = 3;
-
-        if(stat.result[x][y] == 1)
-            stat.score1++;
-        else if(stat.result[x][y] == 2)
-            stat.score2++;
-
-        stat.paint(x, y, stat.result[x][y]);
-
-        return stat.result[x][y];
-    },
-
-    checkoverallwin: function()
-    {
-        if(check(stat.result[0][0], stat.result[0][1], stat.result[0][2]))
-            return stat.result[0][0];
-        if(check(stat.result[1][0], stat.result[1][1], stat.result[1][2]))
-            return stat.result[1][0];
-        if(check(stat.result[2][0], stat.result[2][1], stat.result[2][2]))
-            return stat.result[2][0];
-
-        if(check(stat.result[0][0], stat.result[1][0], stat.result[2][0]))
-            return stat.result[0][0];
-        if(check(stat.result[0][1], stat.result[1][1], stat.result[2][1]))
-            return stat.result[0][1];
-        if(check(stat.result[0][2], stat.result[1][2], stat.result[2][2]))
-            return stat.result[0][2];
-
-        if(check(stat.result[0][0], stat.result[1][1], stat.result[2][2]))
-            return stat.result[0][0];
-        if(check(stat.result[0][2], stat.result[1][1], stat.result[2][0]))
-            return stat.result[0][2];
-
-        var cnt = 0;
-        for(let i=0; i<3; i++)
-            for(let j=0; j<3; j++)
-                if(stat.result[i][j] != 0)
-                    cnt++;
-        if(cnt == 9)
-            return 3;
-
-        return 0;
-    },
-
-    paintHintAll: function()
-    {
-        for(let i=0; i<3; i++)
-            for(let j=0; j<3; j++)
-                stat.paintHint(i, j);
-    },
-
-    isValidCell: function(x, y)
-    {
-        if(stat.result[x][y] != 0)
-            return false;
-        var cnt = 0;
-
-        for(let i=0; i<3; i++)
-            for(let j=0; j<3; j++)
-                if(stat.map[3*x+i][3*y+j] == 0)
-                    cnt++;
-        
-        if(cnt > 0)
-            return true;
-        else
-            return false;
-    },
-
-    /*
-    The onClick(x, y) function updates a click on a tile.
-    */
-    onClick: function(x, y)
-    {
-        if(stat.map[x][y] != 0)
-        {
-            PS.debug("Warning from onClick(x, y): Invalid move - tile occupied.\n");
-            return WARN_INVALID_MOVE; // Not successful - already occupied.
-        }
-        if(stat.result[Math.floor(x/3)][Math.floor(y/3)] != 0)
-        {
-            PS.debug("Warning from onClick(x, y): Invalid move - cell already has a winner.\n");
-            return WARN_INVALID_MOVE;
-        }
-        if(stat.winner != 0)
-        {
-            PS.debug("Warning from onClick(x, y): Invalid move - game already ended with a winner.\n");
-            return WARN_INVALID_MOVE;
-        }
-        
-        if(stat.curx != -1 && stat.cury != -1)
-        {
-            if(Math.floor(x/3) != stat.curx || Math.floor(y/3) != stat.cury)
-            {
-                PS.debug("Warning from onClick(x, y): Invalid move - wrong cell.");
-                return WARN_INVALID_MOVE;
-            }
-        }
-
-        // Recolor the previous information.
-        if(stat.curx == -1 || stat.cury == -1)
-            stat.paintall();
-        else
-            stat.paint(stat.curx, stat.cury);
-
-        
-        // Update the game results.
-        stat.map[x][y] = stat.player;
-        stat.checkwin(Math.floor(x/3), Math.floor(y/3));
-        stat.winner = stat.checkoverallwin();
-
-        // Update the graphical display.
-        if(stat.player == 1)
-        {
-            PS.glyph(x, y, "O");
-            PS.glyphColor(x, y, COLOR_DARK_BLUE);
-        }
-        else
-        {
-            PS.glyph(x, y, "X");
-            PS.glyphColor(x, y, COLOR_DARK_RED);
-        }
-
-        PS.glyph(1, 9, String(stat.score1));
-        PS.glyph(7, 9, String(stat.score2));
-
-        if(stat.isValidCell(x%3, y%3))
-            stat.curx = x%3, stat.cury = y%3;
-        else
-            stat.curx = stat.cury = -1;
-
-        // Check if the game ends.
-        if(stat.winner == 3)
-        {
-            PS.statusText("The game is ending with a tie.");
-            return GAME_END;
-        }
-        else if(stat.winner != 0)
-        {
-            PS.statusText("Congradulations to player " + stat.winner + " for winning!");
-
-            winDisplay();
-
-            return GAME_END;
-        }
-
-        if(stat.curx == -1 || stat.cury == -1)
-            stat.paintHintAll();
-        else
-            stat.paintHint(stat.curx, stat.cury);
-        stat.player = 3 - stat.player;
-
-        // PS.statusText("It's player "+ stat.player + "'s turn");
-        stat.switchToPlayer(stat.player);
-
-        return SUCCESS;
-    }
-}
 
 function checkWinningStatus()
 {
