@@ -50,10 +50,12 @@ const empty_left_tile = {
 
 const COLOR_RED = 0xDE7378;
 const COLOR_BLUE = 0x73DED9;
-const COLOR_GRAY = 0xABABAB;
+const COLOR_GRAY = 0xDDDDDD;
 
 const COLOR_DARK_RED = 0x811E23;
 const COLOR_DARK_BLUE = 0x1E817D;
+
+const COLOR_BLACK = 0x000000;
 
 const COLOR_BOMB_0 = 0xffee9f;
 const COLOR_BOMB_1 = 0xffd61c;
@@ -105,6 +107,49 @@ class BattleField
         this.health = new Array(21).fill(0).map(() => new Array(15).fill(0));
         
         this.bomb_list = [];
+
+        this.mapSetup();
+    }
+
+    mapSetup()
+    {
+        for(let i=0; i<=20; i++)
+            for(let j=0; j<=14; j++)
+                this.map[i][j] = OUT_OF_BOUNDARY;
+
+        for(let i=4; i<=16; i++)
+            for(let j=2; j<=14; j++)
+                this.map[i][j] = PATH;
+        for(let i=17; i<=19; i++)
+            for(let j=7; j<=9; j++)
+                this.map[i][j] = this.map[i-16][j] = PATH;
+
+        for(let i=8; i<=12; i++)
+            this.map[i][3] = this.map[i][13] = WALL;
+        for(let i=5; i<=11; i++)
+            this.map[8][i] = this.map[12][i] = WALL;
+        this.map[9][8] = this.map[11][8] = WALL;
+        for(let i=4; i<=6; i++)
+            this.map[i][5] = this.map[i][11] = this.map[10+i][5] = this.map[10+i][11] = WALL;
+
+        this.map[3][8] = this.map[17][8] = this.map[5][7] = this.map[5][9] = this.map[15][7] = this.map[15][9] = WALL;
+
+        for(let i=8; i<=12; i++)
+            this.map[i][4] = this.map[i][12] = OBSTACLE;
+        for(let i=4; i<=6; i++)
+            this.map[i][6] = this.map[i][10] = this.map[10+i][6] = this.map[10+i][10] = OBSTACLE;
+        for(let j=7; j<=9; j++)
+            this.map[2][j] = this.map[6][j] = this.map[14][j] = this.map[18][j] = OBSTACLE;
+        this.map[3][7] = this.map[3][9] = this.map[17][7] = this.map[17][9] = OBSTACLE;
+
+        this.map[5][3] = this.map[5][13] = this.map[15][3] = this.map[15][13] = EMPTY_TOWER;
+
+        for(let j=7; j<=9; j++)
+            this.map[1][j] = LABORATORY_PLAYER_ONE, this.map[19][j] = LABORATORY_PLAYER_TWO;
+
+        this.map[10][2] = this.map[10][8] = this.map[10][14] = RITUAL;
+
+        this.map[10][6] = this.map[10][10] = EMPTY_MAIN_TOWER;
     }
 
     resetDirections()
@@ -130,24 +175,16 @@ class BattleField
         // Clear everything.
         for(let i=0; i<=20; i++)
             for(let j=0; j<=14; j++)
-            {
                 PS.border(i, j, empty_tile);
-                this.map[i][j] = OUT_OF_BOUNDARY;
-            }
 
         for(let i=4; i<=16; i++)
             for(let j=2; j<=14; j++)
-            {
                 PS.border(i, j, general_tile);
-                this.map[i][j] = PATH;
-            }
         for(let i=17; i<=19; i++)
             for(let j=7; j<=9; j++)
             {
                 PS.border(i, j, general_tile);
                 PS.border(i-16, j, general_tile);
-
-                this.map[i][j] = this.map[i-16][j] = PATH;
             }
         // Main battlefield.
         for(let i=2; i<=14; i++)
@@ -165,6 +202,40 @@ class BattleField
             PS.border(19, i, thick_right_edge);
             PS.border(1, i, thick_left_edge);
         }
+
+        for(let i=0; i<=20; i++)
+            for(let j=0; j<=14; j++)
+            {
+                if(this.map[i][j] == WALL)
+                    PS.color(i, j, COLOR_BLACK);
+                if(this.map[i][j] == OBSTACLE)
+                    PS.color(i, j, COLOR_GRAY);
+                if(this.map[i][j] == EMPTY_TOWER)
+                {
+                    PS.glyphColor(i, j, COLOR_BLACK);
+                    PS.glyph(i, j, 0x2656);
+                }
+                if(this.map[i][j] == EMPTY_MAIN_TOWER)
+                {
+                    PS.glyphColor(i, j, COLOR_BLACK);
+                    PS.glyph(i, j, 0x1F5FC);
+                }
+                if(this.map[i][j] == RITUAL)
+                {
+                    PS.glyphColor(i, j, COLOR_GRAY);
+                    PS.glyph(i, j, 0x26E9);
+                }
+                if(this.map[i][j] == LABORATORY_PLAYER_ONE)
+                {
+                    PS.glyphColor(i, j, COLOR_DARK_BLUE);
+                    PS.glyph(i, j, 0x21D1);
+                }
+                if(this.map[i][j] == LABORATORY_PLAYER_TWO)
+                {
+                    PS.glyphColor(i, j, COLOR_DARK_RED);
+                    PS.glyph(i, j, 0x21D1);
+                }
+            }
 
         // Lab.
         for(let i=17; i<=19; i++)
