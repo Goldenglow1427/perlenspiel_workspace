@@ -1,6 +1,8 @@
 
 "use strict"; // Do NOT remove this directive!
 
+const DeveloperSetting = false; // Do NOT change the value of this setting!
+
 const EdgeThickness = 2;
 const DefaultThickness = 1;
 
@@ -263,7 +265,7 @@ class BattleField
                 }
                 if(this.map[i][j] == RITUAL)
                 {
-                    PS.glyphColor(i, j, COLOR_GRAY);
+                    PS.glyphColor(i, j, COLOR_BLACK);
                     PS.glyph(i, j, 0x26E9);
                 }
                 if(this.map[i][j] == LABORATORY_PLAYER_ONE)
@@ -350,7 +352,10 @@ class BattleField
             case WALL:
                 return 0;
             case OBSTACLE:
-                return 0;
+                if(DeveloperSetting == true)
+                    return 1;
+                else
+                    return 0;
             case EMPTY_TOWER:
                 return 0;
             case EMPTY_MAIN_TOWER:
@@ -429,7 +434,10 @@ class BattleField
         }
 
         PS.glyph(this.p1x, this.p1y, 'O');
+        // PS.glyphColor(this.p1x, this.p1y, COLOR_DARK_BLUE);
+
         PS.glyph(this.p2x, this.p2y, 'X');
+        // PS.glyphColor(this.p2x, this.p2y, COLOR_DARK_RED);
 
         this.p1movex = this.p1movey = this.p2movex = this.p2movey = 0;
     }
@@ -450,14 +458,11 @@ class BattleField
             PS.color(20-i, 0, COLOR_WHITE);
 
         if(this.p1health == 0 && this.p2health == 0)
-        {
             PS.statusText("The game ends with a tie.");
-        }
-
-        if(this.p1health == 0)
-            PS.statusText("Congradulations to player 2 for winning the game!");
-        if(this.p2health == 0)
-            PS.statusText("Congradulations to player 1 for winning the game!");
+        else if(this.p1health == 0)
+            PS.statusText("Congradulations to player 2!");
+        else if(this.p2health == 0)
+            PS.statusText("Congradulations to player 1!");
 
         if(this.p1health * this.p2health == 0)
             this.gameEndIndicator = true;
@@ -473,6 +478,9 @@ PS.init = function( system, options ) {
     
     PS.gridSize(21, 15);
     PS.statusText("Bomb It!");
+
+    if(DeveloperSetting == true)
+        PS.debug("WARNING: the game is running in debugging mode.");
 
     // PS.debug(battle.p2x);
     battle.drawMapSetup();
@@ -559,6 +567,14 @@ PS.keyDown = function( key, shift, ctrl, options ) {
         battle.p1movex = -1, battle.p1movey = 0;
     if(key == 100) // D
         battle.p1movex = 1, battle.p1movey = 0;
+
+    if(DeveloperSetting == true)
+    {
+        if(key == 49)
+            battle.p1health--;
+        if(key == 50)
+            battle.p2health--;
+    }
 };
 
 PS.keyUp = function( key, shift, ctrl, options ) {
