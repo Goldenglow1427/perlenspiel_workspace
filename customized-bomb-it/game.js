@@ -83,17 +83,53 @@ class BattleField
     p2movex = 0;
     p2movey = 0;
 
-    p1space = false;
-    p2space = false;
+    /**
+     * If the game has ended.
+     */
+    gameEndIndicator = false;
 
+    /**
+     * If the player 1 is going to use the action button next turn.
+     */
+    p1action = false;
+
+    /**
+     * If the player 2 is going to use the action button next turn.
+     */
+    p2action = false;
+
+    /**
+     * The current x coordinate of player 1.
+     */
     p1x;
+    
+    /**
+     * The current y coordinate of player 1.
+     */
     p1y;
+    
+    /**
+     * The current x coordinate of player 2.
+     */
     p2x;
+
+    /**
+     * The current y coordinate of player 2.
+     */
     p2y;
+
+    /**
+     * Showing the health of the player 1.
+     */
+    p1health;
+
+    /**
+     * Showing the health of the player 2.
+     */
+    p2health;
 
     default_map;
     map;
-    health;
 
     bomb_list;
 
@@ -104,6 +140,8 @@ class BattleField
 
         this.p1movex = this.p2movex = 0;
         this.p1movey = this.p2movey = 0;
+
+        this.p1health = this.p2health = 5;
 
         this.map = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.default_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
@@ -312,7 +350,7 @@ class BattleField
             case WALL:
                 return 0;
             case OBSTACLE:
-                return 1;
+                return 0;
             case EMPTY_TOWER:
                 return 0;
             case EMPTY_MAIN_TOWER:
@@ -395,6 +433,35 @@ class BattleField
 
         this.p1movex = this.p1movey = this.p2movex = this.p2movey = 0;
     }
+
+    /**
+     * Update the health status of the two players, and end the game when detected.
+     */
+    updateHealthStatus()
+    {
+        for(let i=1; i<=this.p1health; i++)
+            PS.color(i, 0, COLOR_BLUE);
+        for(let i=this.p1health+1; i<=5; i++)
+            PS.color(i, 0, COLOR_WHITE);
+
+        for(let i=1; i<=this.p2health; i++)
+            PS.color(20-i, 0, COLOR_RED);
+        for(let i=this.p2health+1; i<=5; i++)
+            PS.color(20-i, 0, COLOR_WHITE);
+
+        if(this.p1health == 0 && this.p2health == 0)
+        {
+            PS.statusText("The game ends with a tie.");
+        }
+
+        if(this.p1health == 0)
+            PS.statusText("Congradulations to player 2 for winning the game!");
+        if(this.p2health == 0)
+            PS.statusText("Congradulations to player 1 for winning the game!");
+
+        if(this.p1health * this.p2health == 0)
+            this.gameEndIndicator = true;
+    }
 }
 
 var battle = new BattleField();
@@ -411,7 +478,13 @@ PS.init = function( system, options ) {
     battle.drawMapSetup();
 
     PS.timerStart(3, function(){
+        if(battle.gameEndIndicator == true)
+            return;
+
         globalTick++;
+
+        battle.updateHealthStatus();
+
         if(globalTick % 2 == 0)
             battle.stepUpdate();
     });
@@ -486,19 +559,7 @@ PS.keyDown = function( key, shift, ctrl, options ) {
         battle.p1movex = -1, battle.p1movey = 0;
     if(key == 100) // D
         battle.p1movex = 1, battle.p1movey = 0;
-
-	// Add code here for when a key is pressed.
 };
-
-/*
-PS.keyUp ( key, shift, ctrl, options )
-Called when a key on the keyboard is released.
-This function doesn't have to do anything. Any value returned is ignored.
-[key : Number] = ASCII code of the released key, or one of the PS.KEY_* constants documented in the API.
-[shift : Boolean] = true if shift key is held down, else false.
-[ctrl : Boolean] = true if control key is held down, else false.
-[options : Object] = A JavaScript object with optional data properties; see API documentation for details.
-*/
 
 PS.keyUp = function( key, shift, ctrl, options ) {
 	// Uncomment the following code line to inspect first three parameters:
@@ -508,14 +569,6 @@ PS.keyUp = function( key, shift, ctrl, options ) {
 	// Add code here for when a key is released.
 };
 
-/*
-PS.input ( sensors, options )
-Called when a supported input device event (other than those above) is detected.
-This function doesn't have to do anything. Any value returned is ignored.
-[sensors : Object] = A JavaScript object with properties indicating sensor status; see API documentation for details.
-[options : Object] = A JavaScript object with optional data properties; see API documentation for details.
-NOTE: Currently, only mouse wheel events are reported, and only when the mouse cursor is positioned directly over the grid.
-*/
 
 PS.input = function( sensors, options ) {
 	// Uncomment the following code lines to inspect first parameter:
