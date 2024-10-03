@@ -56,6 +56,7 @@ const COLOR_DARK_RED = 0x811E23;
 const COLOR_DARK_BLUE = 0x1E817D;
 
 const COLOR_BLACK = 0x000000;
+const COLOR_WHITE = 0xFFFFFF;
 
 const COLOR_BOMB_0 = 0xffee9f;
 const COLOR_BOMB_1 = 0xffd61c;
@@ -90,6 +91,7 @@ class BattleField
     p2x;
     p2y;
 
+    default_map;
     map;
     health;
 
@@ -104,6 +106,7 @@ class BattleField
         this.p1movey = this.p2movey = 0;
 
         this.map = new Array(21).fill(0).map(() => new Array(15).fill(0));
+        this.default_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.health = new Array(21).fill(0).map(() => new Array(15).fill(0));
         
         this.bomb_list = [];
@@ -111,6 +114,19 @@ class BattleField
         this.mapSetup();
     }
 
+    /**
+     * Set the current map
+     */
+    setDefaultMap()
+    {
+        for(let i=0; i<=20; i++)
+            for(let j=0; j<=14; j++)
+                this.default_map[i][j] = PS.glyph(i, j);
+    }
+
+    /**
+     * Initialize this.map to its default value set.
+     */
     mapSetup()
     {
         for(let i=0; i<=20; i++)
@@ -152,24 +168,9 @@ class BattleField
         this.map[10][6] = this.map[10][10] = EMPTY_MAIN_TOWER;
     }
 
-    resetDirections()
-    {
-        this.p1movex = this.p1movey = this.p2movex = this.p2movey = 0;
-    }
-
-    checkspace(pl, x, y)
-    {
-        // this.bomb_list.push(x);
-    }
-
-    updateBomb()
-    {
-        for(let i=this.bomb_list.length-1; i>=0; i--)
-        {
-            PS.debug(this.bomb_list[i][0]);
-        }
-    }
-
+    /**
+     * Draw the map in the grid, based on the assigned values from this.map.
+     */ 
     drawMapSetup()
     {
         // Clear everything.
@@ -206,6 +207,8 @@ class BattleField
         for(let i=0; i<=20; i++)
             for(let j=0; j<=14; j++)
             {
+                PS.color(i, j, COLOR_WHITE);
+                PS.glyph(i, j, '');
                 if(this.map[i][j] == WALL)
                     PS.color(i, j, COLOR_BLACK);
                 if(this.map[i][j] == OBSTACLE)
@@ -236,6 +239,8 @@ class BattleField
                     PS.glyph(i, j, 0x21D1);
                 }
             }
+
+        this.setDefaultMap();
 
         // Lab.
         for(let i=17; i<=19; i++)
@@ -279,17 +284,107 @@ class BattleField
         // PS.glyph()
     }
 
+    /**
+     * Query if a player can enter another tile, based on the current game setup.
+     * @param {int} pl The player that's trying to enter the new tile, can only be either 1 or 2.
+     * @param {int} x X coordinate of the new tile. 
+     * @param {int} y Y coordinate of the new tile.
+     */
+    queryEnterTile(pl, x, y)
+    {
+        if(pl != 1 && pl != 2)
+        {
+            PS.debug("BattleField.queryEnterTile(): player can only be 1 or 2.");
+            return -1;
+        }
+
+        if(pl == 1 && x == this.p2x && y == this.p2y)
+            return 0;
+        if(pl == 2 && x == this.p1x && y == this.p1y)
+            return 0;
+        if(y > 14 || y < 2 || x < 1 || x > 19)
+            return 0;
+        
+        switch(this.map[x][y])
+        {
+            case OUT_OF_BOUNDARY:
+                return 0;
+            case WALL:
+                return 0;
+            case OBSTACLE:
+                return 1;
+            case EMPTY_TOWER:
+                return 0;
+            case EMPTY_MAIN_TOWER:
+                return 0;
+            case PATH:
+                return 1;
+            case TOWER_PLAYER_ONE:
+                if(pl == 2)
+                    return 0;
+                else
+                    return 1;
+            case TOWER_PLAYER_TWO:
+                if(pl == 1)
+                    return 0;
+                else
+                    return 1;
+            case MAIN_TOWER_PLAYER_ONE:
+                if(pl == 2)
+                    return 0;
+                else
+                    return 1;
+            case MAIN_TOWER_PLAYER_TWO:
+                if(pl == 1)
+                    return 0;
+                else
+                    return 1;
+            case LABORATORY_PLAYER_ONE:
+                if(pl == 2)
+                    return 0;
+                else
+                    return 1;
+            case LABORATORY_PLAYER_TWO:
+                if(pl == 1)
+                    return 0;
+                else
+                    return 1;
+            case RITUAL:
+                return 1;
+        }
+        
+        PS.debug("BattleField.queryEnterTile(): tile status error.");
+        return -1;
+    }
+
     stepUpdate()
     {
-        PS.glyph(this.p1x, this.p1y, '');
-        PS.glyph(this.p2x, this.p2y, '');
+        // Update the map environment.
+
+        var flag1 = false;
+        var flag2 = false;
+
+        PS.glyph(this.p1x, this.p1y, this.default_map[this.p1x][this.p1y]);
+        PS.glyph(this.p2x, this.p2y, this.default_map[this.p2x][this.p2y]);
+
+        flag1 = this.queryEnterTile(1, this.p1x+this.p1movex, this.p1y+this.p1movey);
+        flag2 = this.queryEnterTile(2, this.p2x+this.p2movex, this.p2y+this.p2movey);
+
+        if(this.p1x + this.p1movex == this.p2x + this.p2movex && this.p1y + this.p1movey == this.p2y + this.p2movey)
+        {
+            var rndid = PS.random(2);
+            if(rndid == 1)
+                flag1 = false;
+            else
+                flag2 = false;
+        }
         
-        if(this.map[this.p1x+this.p1movex][this.p1y+this.p1movey] == PATH)
+        if(flag1 == 1)
         {
             this.p1x += this.p1movex;
             this.p1y += this.p1movey;
         }
-        if(this.map[this.p2x+this.p2movex][this.p2y+this.p2movey] == PATH)
+        if(flag2 == 1)
         {
             this.p2x += this.p2movex;
             this.p2y += this.p2movey;
@@ -297,32 +392,28 @@ class BattleField
 
         PS.glyph(this.p1x, this.p1y, 'O');
         PS.glyph(this.p2x, this.p2y, 'X');
-        // PS.debug(this.p2x);
-        // PS.debug(this.p2y);
-        // PS.debug("\n");
 
-        PS.statusText("(" + this.p2x + ", " + this.p2y + ")");
-
-        this.checkspace(1, 4, 10);
-        // this.updateBomb();
-
-        this.resetDirections();
+        this.p1movex = this.p1movey = this.p2movex = this.p2movey = 0;
     }
 }
 
 var battle = new BattleField();
+var globalTick = 0;
 
 PS.init = function( system, options ) {
 
     // battle.initialize();
     
     PS.gridSize(21, 15);
+    PS.statusText("Bomb It!");
 
     // PS.debug(battle.p2x);
     battle.drawMapSetup();
 
-    PS.timerStart(6, function(){
-        battle.stepUpdate();
+    PS.timerStart(3, function(){
+        globalTick++;
+        if(globalTick % 2 == 0)
+            battle.stepUpdate();
     });
 
 };
@@ -376,25 +467,25 @@ PS.exitGrid = function( options ) {
 PS.keyDown = function( key, shift, ctrl, options ) {
 	// Uncomment the following code line to inspect first three parameters:
 
-	PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
+	// PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
 
     if(key == 1008) // upward.
-        battle.p2movey = 1;
+        battle.p2movey = 1, battle.p2movex = 0;
     if(key == 1006)
-        battle.p2movey = -1;
+        battle.p2movey = -1, battle.p2movex = 0;
     if(key == 1005)
-        battle.p2movex = -1;
+        battle.p2movex = -1, battle.p2movey = 0;
     if(key == 1007)
-        battle.p2movex = 1;
+        battle.p2movex = 1, battle.p2movey = 0;
 
     if(key == 119) // W
-        battle.p1movey = -1;
+        battle.p1movey = -1, battle.p1movex = 0;
     if(key == 115) // A
-        battle.p1movey = 1;
+        battle.p1movey = 1, battle.p1movex = 0;
     if(key == 97) // S
-        battle.p1movex = -1;
+        battle.p1movex = -1, battle.p1movey = 0;
     if(key == 100) // D
-        battle.p1movex = 1;
+        battle.p1movex = 1, battle.p1movey = 0;
 
 	// Add code here for when a key is pressed.
 };
