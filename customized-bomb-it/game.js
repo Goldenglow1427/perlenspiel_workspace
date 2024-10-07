@@ -50,6 +50,11 @@ const empty_left_tile = {
     left: 0
 };
 
+const CHAR_TOWER = 0x2656;
+const CHAR_MAIN_TOWER = 0x1F5FC;
+const CHAR_RITUAL = 0x26E9;
+const CHAR_LABORATORY = 0x21D1;
+
 const COLOR_RED = 0xDE7378;
 const COLOR_BLUE = 0x73DED9;
 const COLOR_GRAY = 0xDDDDDD;
@@ -137,6 +142,10 @@ class BattleField
 
     bomb_map;
 
+    top_tower = [0, 0];
+    mid_tower = [0, 0];
+    bot_tower = [0, 0];
+
     constructor()
     {
         this.p1x = 4, this.p1y = 8;
@@ -199,14 +208,15 @@ class BattleField
             this.map[2][j] = this.map[6][j] = this.map[14][j] = this.map[18][j] = OBSTACLE;
         this.map[3][7] = this.map[3][9] = this.map[17][7] = this.map[17][9] = OBSTACLE;
 
-        this.map[5][3] = this.map[5][13] = this.map[15][3] = this.map[15][13] = EMPTY_TOWER;
+        // this.map[5][3] = this.map[5][13] = this.map[15][3] = this.map[15][13] = EMPTY_TOWER;
 
         for(let j=7; j<=9; j++)
             this.map[1][j] = LABORATORY_PLAYER_ONE, this.map[19][j] = LABORATORY_PLAYER_TWO;
 
-        this.map[10][2] = this.map[10][8] = this.map[10][14] = RITUAL;
+        // this.map[10][2] = this.map[10][8] = this.map[10][14] = RITUAL;
+        this.map[10][2] = this.map[10][8] = this.map[10][14] = EMPTY_TOWER;
 
-        this.map[10][6] = this.map[10][10] = EMPTY_MAIN_TOWER;
+        // this.map[10][6] = this.map[10][10] = EMPTY_MAIN_TOWER;
     }
 
     /**
@@ -278,6 +288,16 @@ class BattleField
                 {
                     PS.glyphColor(i, j, COLOR_DARK_RED);
                     PS.glyph(i, j, 0x21D1);
+                }
+                if(this.map[i][j] == TOWER_PLAYER_ONE)
+                {
+                    PS.glyphColor(i, j, COLOR_DARK_BLUE);
+                    PS.glyph(i, j, CHAR_TOWER);
+                }
+                if(this.map[i][j] == TOWER_PLAYER_TWO)
+                {
+                    PS.glyphColor(i, j, COLOR_DARK_RED);
+                    PS.glyph(i, j, CHAR_TOWER);
                 }
             }
 
@@ -361,7 +381,7 @@ class BattleField
                 else
                     return 0;
             case EMPTY_TOWER:
-                return 0;
+                return 1;
             case EMPTY_MAIN_TOWER:
                 return 0;
             case PATH:
@@ -429,6 +449,27 @@ class BattleField
         }
 
         this.bomb_map[x][y] = 15;
+    }
+
+    occupyTower(pl, pos)
+    {
+        if(pos == 1 && this.top_tower[0] == 0)
+        {
+            this.top_tower[0] = pl;
+            this.top_tower[1] = 20;
+        }
+
+        if(pos == 2 && this.mid_tower[0] == 0)
+        {
+            this.mid_tower[0] = pl;
+            this.mid_tower[1] = 20;
+        }
+
+        if(pos == 3 && this.bot_tower[0] == 0)
+        {
+            this.bot_tower[0] = pl;
+            this.bot_tower[1] = 20;
+        }
     }
 
     /**
