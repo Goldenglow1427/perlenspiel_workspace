@@ -1,7 +1,7 @@
 
 "use strict"; // Do NOT remove this directive!
 
-const DeveloperSetting = false; // Do NOT change the value of this setting!
+const DeveloperSetting = true; // Do NOT change the value of this setting!
 
 const EdgeThickness = 2;
 const DefaultThickness = 1;
@@ -133,7 +133,7 @@ class BattleField
     default_map;
     map;
 
-    bomb_list;
+    bomb_map;
 
     constructor()
     {
@@ -148,8 +148,7 @@ class BattleField
         this.map = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.default_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.health = new Array(21).fill(0).map(() => new Array(15).fill(0));
-        
-        this.bomb_list = [];
+        this.bomb_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
 
         this.mapSetup();
     }
@@ -400,7 +399,48 @@ class BattleField
         return -1;
     }
 
-    stepUpdate()
+    /**
+     * Player pl has placed a bomb in the tile (x, y).
+     * @param {int} pl The player.
+     * @param {int} x X coordinate of the new tile.
+     * @param {int} y Y coordinate of the new tile.
+     */
+    placeBomb(pl, x, y)
+    {
+        if(pl != 1 && pl != 2)
+        {
+            PS.debug("Warning from placeBomb(): Invalid player id");
+            return;
+        }
+        if(this.map[x][y] != PATH)
+        {
+            PS.debug("Warning from placeBomb(): The current tile cannot place a bomb");
+            return;
+        }
+        if(this.bomb_map[x][y] != 0)
+        {
+            PS.debug("Warning from placeBomb(): The current tile already has a bomb");
+            return;
+        }
+
+        this.bomb_map[x][y] = 15;
+    }
+
+    /**
+     * Deal with the operations about detonating a bomb.
+     * @param {int} x X coordinate of the bomb.
+     * @param {int} y Y coordinate of the bomb.
+     * @param {int} r radius of the bomb detonation, default value is 1.
+     */
+    detonateBomb(x, y, r=1)
+    {
+        PS.debug("A bomb at (" + x + ", " + y + ") is detonated.\n");
+    }
+
+    /**
+     * Update the operation of players based on the input.
+     */
+    updatePlayerOperation()
     {
         // Update the map environment.
 
@@ -440,6 +480,43 @@ class BattleField
         // PS.glyphColor(this.p2x, this.p2y, COLOR_DARK_RED);
 
         this.p1movex = this.p1movey = this.p2movex = this.p2movey = 0;
+
+        if(this.p1action == true)
+        {
+            if(this.map[this.p1x][this.p1y] == PATH)
+                this.placeBomb(1, this.p1x, this.p1y);
+        }
+        if(this.p2action == true)
+        {
+            if(this.map[this.p2x][this.p2y] == PATH)
+                this.placeBomb(2, this.p2x, this.p2y);
+        }
+        
+        this.p1action = this.p2action = 0;
+    }
+
+    /**
+     * Update the status of all the bombs.
+     */
+    updateBombStatus()
+    {
+        for(let i=0; i<=20; i++)
+            for(let j=0; j<=14; j++)
+                if(this.bomb_map[i][j] != 0)
+                {
+                    this.bomb_map[i][j]--;
+                    if(this.bomb_map[i][j] >= 10)
+                        PS.color(i, j, COLOR_BOMB_0);
+                    else if(this.bomb_map[i][j] >= 5)
+                        PS.color(i, j, COLOR_BOMB_1);
+                    else if(this.bomb_map[i][j] >= 1)
+                        PS.color(i, j, COLOR_BOMB_2);
+                    else
+                    {
+                        this.detonateBomb(i, j);
+                        PS.color(i, j, COLOR_WHITE);
+                    }
+                }
     }
 
     /**
@@ -494,7 +571,10 @@ PS.init = function( system, options ) {
         battle.updateHealthStatus();
 
         if(globalTick % 2 == 0)
-            battle.stepUpdate();
+        {
+            battle.updatePlayerOperation();
+            battle.updateBombStatus();
+        }
     });
 
 };
@@ -550,23 +630,27 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 
 	// PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
 
-    if(key == 1008) // upward.
-        battle.p2movey = 1, battle.p2movex = 0;
-    if(key == 1006)
-        battle.p2movey = -1, battle.p2movex = 0;
-    if(key == 1005)
-        battle.p2movex = -1, battle.p2movey = 0;
-    if(key == 1007)
-        battle.p2movex = 1, battle.p2movey = 0;
-
     if(key == 119) // W
         battle.p1movey = -1, battle.p1movex = 0;
-    if(key == 115) // A
+    if(key == 115) // S
         battle.p1movey = 1, battle.p1movex = 0;
-    if(key == 97) // S
+    if(key == 97) // A
         battle.p1movex = -1, battle.p1movey = 0;
     if(key == 100) // D
         battle.p1movex = 1, battle.p1movey = 0;
+    if(key == 32) // space.
+        battle.p1action = true;
+
+    if(key == 1008) // downward arrow key.
+        battle.p2movey = 1, battle.p2movex = 0;
+    if(key == 1006) // upward arrow key.
+        battle.p2movey = -1, battle.p2movex = 0;
+    if(key == 1005) // leftward arrow key.
+        battle.p2movex = -1, battle.p2movey = 0;
+    if(key == 1007) // rightward arrow key.
+        battle.p2movex = 1, battle.p2movey = 0;
+    if(key == 13) // enter.
+        battle.p2action = true;
 
     if(DeveloperSetting == true)
     {
