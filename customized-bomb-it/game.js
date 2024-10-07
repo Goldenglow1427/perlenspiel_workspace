@@ -1,7 +1,7 @@
 
 "use strict"; // Do NOT remove this directive!
 
-const DeveloperSetting = true; // Do NOT change the value of this setting!
+const DeveloperSetting = false; // Do NOT change the value of this setting!
 
 const EdgeThickness = 2;
 const DefaultThickness = 1;
@@ -77,6 +77,8 @@ const MAIN_TOWER_PLAYER_TWO = 7;
 const LABORATORY_PLAYER_ONE = 8;
 const LABORATORY_PLAYER_TWO = 9;
 const RITUAL = 10;
+
+const DIRECTION_PAIRS = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
 class BattleField
 {
@@ -343,6 +345,9 @@ class BattleField
             return 0;
         if(y > 14 || y < 2 || x < 1 || x > 19)
             return 0;
+
+        if(this.bomb_map[x][y] != 0 && DeveloperSetting == false)
+            return 0;
         
         switch(this.map[x][y])
         {
@@ -435,6 +440,52 @@ class BattleField
     detonateBomb(x, y, r=1)
     {
         PS.debug("A bomb at (" + x + ", " + y + ") is detonated.\n");
+
+        if(this.p1x == x && this.p1y == y)
+        {
+            this.p1health -= 2;
+            return;
+        }
+        if(this.p2x == x && this.p2y == y)
+        {
+            this.p2health -= 2;
+            return;
+        }
+        
+        for(let k=0; k<=3; k++)
+        {
+            for(let i=1; i<=r; i++)
+            {
+                let newx = x + i*DIRECTION_PAIRS[k][0];
+                let newy = y + i*DIRECTION_PAIRS[k][1];
+
+                // PS.debug("F" + newx + ", " + newy + "\n");
+
+                if(this.p1x == newx && this.p1y == newy)
+                {
+                    this.p1health--;
+                    break;
+                }
+                if(this.p2x == newx && this.p2y == newy)
+                {
+                    this.p2health--;
+                    break;
+                }
+
+                if(this.map[newx][newy] == OUT_OF_BOUNDARY)
+                    break;
+                if(this.map[newx][newy] == WALL)
+                    break;
+                if(this.map[newx][newy] == PATH)
+                    continue;
+                if(this.map[newx][newy] == OBSTACLE)
+                {
+                    this.map[newx][newy] = PATH;
+                    PS.color(newx, newy, COLOR_WHITE);
+                    break;
+                }
+            }
+        }
     }
 
     /**
@@ -524,6 +575,11 @@ class BattleField
      */
     updateHealthStatus()
     {
+        if(this.p1health <= 0)
+            this.p1health = 0;
+        if(this.p2health <= 0)
+            this.p2health = 0;
+
         for(let i=1; i<=this.p1health; i++)
             PS.color(i, 0, COLOR_BLUE);
         for(let i=this.p1health+1; i<=5; i++)
