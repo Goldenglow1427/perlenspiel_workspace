@@ -85,6 +85,9 @@ const RITUAL = 10;
 
 const DIRECTION_PAIRS = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
+/**
+ * Class to monitor and update the battle page status.
+ */
 class BattleField
 {
     p1movex = 0;
@@ -137,14 +140,23 @@ class BattleField
      */
     p2health;
 
+    /**
+     * Showing the count of player 1 base.
+     */
+    p1base = 3;
+
+    /**
+     * Showing the count of player 2 base.
+     */
+    p2base = 3;
+
     default_map;
     map;
 
     bomb_map;
+    tower_map;
 
-    top_tower = [0, 0];
-    mid_tower = [0, 0];
-    bot_tower = [0, 0];
+    tower_list;
 
     constructor()
     {
@@ -160,6 +172,11 @@ class BattleField
         this.default_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.health = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.bomb_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
+        this.tower_map = new Array(21).fill(0).map(() => new Array(15).fill(0).map(() => new Array(2).fill(0)));
+
+        this.tower_list = [[10, 2], [10, 8], [10, 14]];
+
+        this.p1base = this.p2base = 3;
 
         this.mapSetup();
     }
@@ -451,25 +468,22 @@ class BattleField
         this.bomb_map[x][y] = 15;
     }
 
-    occupyTower(pl, pos)
+    occupyTower(pl, x, y)
     {
-        if(pos == 1 && this.top_tower[0] == 0)
+        if(pl != 1 && pl != 2)
         {
-            this.top_tower[0] = pl;
-            this.top_tower[1] = 20;
+            PS.debug("Warning from occupyTower(): invalid player.");
+            return;
         }
 
-        if(pos == 2 && this.mid_tower[0] == 0)
+        if(this.tower_map[x][y][0] != 0)
         {
-            this.mid_tower[0] = pl;
-            this.mid_tower[1] = 20;
+            PS.debug("Warning from occupyTower(): occupation in progress.");
+            return;
         }
 
-        if(pos == 3 && this.bot_tower[0] == 0)
-        {
-            this.bot_tower[0] = pl;
-            this.bot_tower[1] = 20;
-        }
+        this.tower_map[x][y][0] = pl;
+        this.tower_map[x][y][1] = 20;
     }
 
     /**
@@ -480,7 +494,7 @@ class BattleField
      */
     detonateBomb(x, y, r=1)
     {
-        PS.debug("A bomb at (" + x + ", " + y + ") is detonated.\n");
+        // PS.debug("A bomb at (" + x + ", " + y + ") is detonated.\n");
 
         if(this.p1x == x && this.p1y == y)
         {
@@ -523,6 +537,28 @@ class BattleField
                 {
                     this.map[newx][newy] = PATH;
                     PS.color(newx, newy, COLOR_WHITE);
+                    break;
+                }
+                if(this.map[newx][newy] == LABORATORY_PLAYER_ONE)
+                {
+                    this.map[newx][newy] = OBSTACLE;
+                    PS.color(newx, newy, COLOR_GRAY);
+
+                    PS.glyph(newx, newy, '');
+
+                    this.p1base--;
+
+                    break;
+                }
+                if(this.map[newx][newy] == LABORATORY_PLAYER_TWO)
+                {
+                    this.map[newx][newy] = OBSTACLE;
+                    PS.color(newx, newy, COLOR_GRAY);
+
+                    PS.glyph(newx, newy, '');
+
+                    this.p2base--;
+
                     break;
                 }
             }
@@ -577,11 +613,15 @@ class BattleField
         {
             if(this.map[this.p1x][this.p1y] == PATH)
                 this.placeBomb(1, this.p1x, this.p1y);
+            else if(this.map[this.p1x][this.p1y] == EMPTY_TOWER)
+                this.occupyTower(1, this.p1x, this.p1y);
         }
         if(this.p2action == true)
         {
             if(this.map[this.p2x][this.p2y] == PATH)
                 this.placeBomb(2, this.p2x, this.p2y);
+            else if(this.map[this.p2x][this.p2y] == EMPTY_TOWER)
+                this.occupyTower(2, this.p2x, this.p2y);
         }
         
         this.p1action = this.p2action = 0;
@@ -612,6 +652,51 @@ class BattleField
     }
 
     /**
+     * Update the status of tower occupation.
+     */
+    updateOccupationStatus()
+    {
+        for(let i=0; i<this.tower_list.length; i++)
+        {
+            let x = this.tower_list[i][0];
+            let y = this.tower_list[i][1];
+
+            if(this.tower_map[x][y][0] == 0)
+                continue;
+
+            if(this.tower_map[x][y][0] == 1)
+            {
+                if(this.tower_map[x][y][1] == 0)
+                {
+                    this.tower_map[x][y][0] = 0;
+                    this.map[x][y] = TOWER_PLAYER_ONE;
+
+                    PS.glyphColor(x, y, COLOR_DARK_BLUE);
+                }
+                else if(this.p1x == x && this.p1y == y)
+                    this.tower_map[x][y][1]--;
+                else
+                    this.tower_map[x][y] = [0, 0];
+            }
+
+            if(this.tower_map[x][y][0] == 2)
+            {
+                if(this.tower_map[x][y][1] == 0)
+                {
+                    this.tower_map[x][y][0] = 0;
+                    this.map[x][y] = TOWER_PLAYER_TWO;
+                    
+                    PS.glyphColor(x, y, COLOR_DARK_RED);
+                }
+                else if(this.p2x == x && this.p2y == y)
+                    this.tower_map[x][y][1]--;
+                else
+                    this.tower_map[x][y] = [0, 0];
+            }
+        }
+    }
+
+    /**
      * Update the health status of the two players, and end the game when detected.
      */
     updateHealthStatus()
@@ -620,6 +705,14 @@ class BattleField
             this.p1health = 0;
         if(this.p2health <= 0)
             this.p2health = 0;
+
+        if(this.p1base == 0)
+            PS.statusText("Congradulations to player 2!");
+        if(this.p2base == 0)
+            PS.statusText("Congradulations to player 1!");
+
+        if(this.p1base * this.p2base == 0)
+            this.gameEndIndicator = true;
 
         for(let i=1; i<=this.p1health; i++)
             PS.color(i, 0, COLOR_BLUE);
@@ -666,6 +759,7 @@ PS.init = function( system, options ) {
         globalTick++;
 
         battle.updateHealthStatus();
+        battle.updateOccupationStatus();
 
         if(globalTick % 2 == 0)
         {
