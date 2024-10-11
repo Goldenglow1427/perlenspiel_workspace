@@ -170,7 +170,6 @@ class BattleField
      */
     p2base = 3;
 
-    default_map;
     map;
 
     bomb_map;
@@ -199,16 +198,6 @@ class BattleField
         this.p1base = this.p2base = 3;
 
         this.mapSetup();
-    }
-
-    /**
-     * Set the current map
-     */
-    setDefaultMap()
-    {
-        for(let i=0; i<=20; i++)
-            for(let j=0; j<=14; j++)
-                this.default_map[i][j] = PS.glyph(i, j);
     }
 
     /**
@@ -245,6 +234,8 @@ class BattleField
             this.map[2][j] = this.map[6][j] = this.map[14][j] = this.map[18][j] = OBSTACLE;
         this.map[3][7] = this.map[3][9] = this.map[17][7] = this.map[17][9] = OBSTACLE;
 
+        this.map[2][8] = this.map[18][8] = WALL;
+
         // this.map[5][3] = this.map[5][13] = this.map[15][3] = this.map[15][13] = EMPTY_TOWER;
 
         for(let j=7; j<=9; j++)
@@ -256,6 +247,51 @@ class BattleField
             this.map[this.tower_list[i][0]][this.tower_list[i][1]] = EMPTY_TOWER;
 
         // this.map[10][6] = this.map[10][10] = EMPTY_MAIN_TOWER;
+    }
+
+    drawGlyph(i, j, op)
+    {
+        PS.color(i, j, COLOR_WHITE);
+        PS.glyph(i, j, '');
+        if(op == WALL)
+            PS.color(i, j, COLOR_BLACK);
+        if(op == OBSTACLE)
+            PS.color(i, j, COLOR_GRAY);
+        if(op == EMPTY_TOWER)
+        {
+            PS.glyphColor(i, j, COLOR_BLACK);
+            PS.glyph(i, j, 0x2656);
+        }
+        if(op == EMPTY_MAIN_TOWER)
+        {
+            PS.glyphColor(i, j, COLOR_BLACK);
+            PS.glyph(i, j, 0x1F5FC);
+        }
+        if(op == RITUAL)
+        {
+            PS.glyphColor(i, j, COLOR_BLACK);
+            PS.glyph(i, j, 0x26E9);
+        }
+        if(op == LABORATORY_PLAYER_ONE)
+        {
+            PS.glyphColor(i, j, COLOR_DARK_BLUE);
+            PS.glyph(i, j, 0x21D1);
+        }
+        if(op == LABORATORY_PLAYER_TWO)
+        {
+            PS.glyphColor(i, j, COLOR_DARK_RED);
+            PS.glyph(i, j, 0x21D1);
+        }
+        if(op == TOWER_PLAYER_ONE)
+        {
+            PS.glyphColor(i, j, COLOR_DARK_BLUE);
+            PS.glyph(i, j, CHAR_TOWER);
+        }
+        if(op == TOWER_PLAYER_TWO)
+        {
+            PS.glyphColor(i, j, COLOR_DARK_RED);
+            PS.glyph(i, j, CHAR_TOWER);
+        }
     }
 
     /**
@@ -296,51 +332,7 @@ class BattleField
 
         for(let i=0; i<=20; i++)
             for(let j=0; j<=14; j++)
-            {
-                PS.color(i, j, COLOR_WHITE);
-                PS.glyph(i, j, '');
-                if(this.map[i][j] == WALL)
-                    PS.color(i, j, COLOR_BLACK);
-                if(this.map[i][j] == OBSTACLE)
-                    PS.color(i, j, COLOR_GRAY);
-                if(this.map[i][j] == EMPTY_TOWER)
-                {
-                    PS.glyphColor(i, j, COLOR_BLACK);
-                    PS.glyph(i, j, 0x2656);
-                }
-                if(this.map[i][j] == EMPTY_MAIN_TOWER)
-                {
-                    PS.glyphColor(i, j, COLOR_BLACK);
-                    PS.glyph(i, j, 0x1F5FC);
-                }
-                if(this.map[i][j] == RITUAL)
-                {
-                    PS.glyphColor(i, j, COLOR_BLACK);
-                    PS.glyph(i, j, 0x26E9);
-                }
-                if(this.map[i][j] == LABORATORY_PLAYER_ONE)
-                {
-                    PS.glyphColor(i, j, COLOR_DARK_BLUE);
-                    PS.glyph(i, j, 0x21D1);
-                }
-                if(this.map[i][j] == LABORATORY_PLAYER_TWO)
-                {
-                    PS.glyphColor(i, j, COLOR_DARK_RED);
-                    PS.glyph(i, j, 0x21D1);
-                }
-                if(this.map[i][j] == TOWER_PLAYER_ONE)
-                {
-                    PS.glyphColor(i, j, COLOR_DARK_BLUE);
-                    PS.glyph(i, j, CHAR_TOWER);
-                }
-                if(this.map[i][j] == TOWER_PLAYER_TWO)
-                {
-                    PS.glyphColor(i, j, COLOR_DARK_RED);
-                    PS.glyph(i, j, CHAR_TOWER);
-                }
-            }
-
-        this.setDefaultMap();
+                this.drawGlyph(i, j, this.map[i][j]);
 
         // Lab.
         for(let i=17; i<=19; i++)
@@ -570,6 +562,8 @@ class BattleField
 
                     this.p1base--;
 
+                    this.onTowerTakedown();
+
                     break;
                 }
                 if(this.map[newx][newy] == LABORATORY_PLAYER_TWO)
@@ -580,6 +574,8 @@ class BattleField
                     PS.glyph(newx, newy, '');
 
                     this.p2base--;
+
+                    this.onTowerTakedown();
 
                     break;
                 }
@@ -597,8 +593,13 @@ class BattleField
         var flag1 = false;
         var flag2 = false;
 
-        PS.glyph(this.p1x, this.p1y, this.default_map[this.p1x][this.p1y]);
-        PS.glyph(this.p2x, this.p2y, this.default_map[this.p2x][this.p2y]);
+        // PS.glyph(this.p1x, this.p1y, this.default_map[this.p1x][this.p1y]);
+        // PS.glyph(this.p2x, this.p2y, this.default_map[this.p2x][this.p2y]);
+
+        if(this.p1movex + this.p1movey != 0)
+            this.drawGlyph(this.p1x, this.p1y, this.map[this.p1x][this.p1y]);
+        if(this.p2movex + this.p2movey != 0)
+            this.drawGlyph(this.p2x, this.p2y, this.map[this.p2x][this.p2y]);
 
         flag1 = this.queryEnterTile(1, this.p1x+this.p1movex, this.p1y+this.p1movey);
         flag2 = this.queryEnterTile(2, this.p2x+this.p2movex, this.p2y+this.p2movey);
@@ -773,6 +774,18 @@ class BattleField
 
         if(this.p1health * this.p2health == 0)
             this.gameEndIndicator = true;
+    }
+
+    /**
+     * Called whenever a home base has being takedown.
+     */
+    onTowerTakedown()
+    {
+        PS.glyph(this.p1x, this.p1y, '');
+        PS.glyph(this.p2x, this.p2y, '');
+
+        this.p1x = 4, this.p2x = 16;
+        this.p1y = this.p2y = 8;
     }
 }
 
