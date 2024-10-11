@@ -1,7 +1,7 @@
 
 "use strict"; // Do NOT remove this directive!
 
-const DeveloperSetting = false; // Do NOT change the value of this setting!
+const DeveloperSetting = true; // Do NOT change the value of this setting!
 
 const EdgeThickness = 2;
 const DefaultThickness = 1;
@@ -68,6 +68,26 @@ const COLOR_WHITE = 0xFFFFFF;
 const COLOR_BOMB_0 = 0xffee9f;
 const COLOR_BOMB_1 = 0xffd61c;
 const COLOR_BOMB_2 = 0xff4000;
+
+/**
+ * Generated from the website: https://pinetools.com/monochromatic-colors-generator
+ * 
+ * The default color used is COLOR_DARK_BLUE (0x1E817D).
+ */
+const COLOR_P1_SERIES = [
+    0xffffff, 0xedfafa, 0xdbf6f5, 0xc9f2f0, 0xb7eeec, 0xa5eae7,
+    0x93e5e2, 0x81e1dd, 0x6fddd9, 0x5dd9d4, 0x4bd5cf, 0x39d0ca
+];
+
+/**
+ * Generated from the website: https://pinetools.com/monochromatic-colors-generator
+ * 
+ * The default color used is COLOR_DARK_RED (0x811E23).
+ */
+const COLOR_P2_SERIES = [
+    0xffffff, 0xfaeded, 0xf6dbdc, 0xf2c9cb, 0xeeb7b9, 0xeeb7b9,
+    0xe59397, 0xe18185, 0xdd6f74, 0xd95d63, 0xd54b52, 0xd03940
+]
 
 const OUT_OF_BOUNDARY = -2;
 const WALL = -1;
@@ -231,7 +251,9 @@ class BattleField
             this.map[1][j] = LABORATORY_PLAYER_ONE, this.map[19][j] = LABORATORY_PLAYER_TWO;
 
         // this.map[10][2] = this.map[10][8] = this.map[10][14] = RITUAL;
-        this.map[10][2] = this.map[10][8] = this.map[10][14] = EMPTY_TOWER;
+        // this.map[10][2] = this.map[10][8] = this.map[10][14] = EMPTY_TOWER;
+        for(let i=0; i<this.tower_list.length; i++)
+            this.map[this.tower_list[i][0]][this.tower_list[i][1]] = EMPTY_TOWER;
 
         // this.map[10][6] = this.map[10][10] = EMPTY_MAIN_TOWER;
     }
@@ -483,7 +505,7 @@ class BattleField
         }
 
         this.tower_map[x][y][0] = pl;
-        this.tower_map[x][y][1] = 20;
+        this.tower_map[x][y][1] = 60;
     }
 
     /**
@@ -672,11 +694,20 @@ class BattleField
                     this.map[x][y] = TOWER_PLAYER_ONE;
 
                     PS.glyphColor(x, y, COLOR_DARK_BLUE);
+                    PS.color(x, y, COLOR_WHITE);
                 }
                 else if(this.p1x == x && this.p1y == y)
+                {
                     this.tower_map[x][y][1]--;
+                    
+                    PS.color(x, y, COLOR_P1_SERIES[11-Math.floor(this.tower_map[x][y][1]/5)]);
+                }
                 else
+                {
                     this.tower_map[x][y] = [0, 0];
+
+                    PS.color(x, y, COLOR_WHITE);
+                }
             }
 
             if(this.tower_map[x][y][0] == 2)
@@ -687,11 +718,20 @@ class BattleField
                     this.map[x][y] = TOWER_PLAYER_TWO;
                     
                     PS.glyphColor(x, y, COLOR_DARK_RED);
+                    PS.color(x, y, COLOR_WHITE);
                 }
                 else if(this.p2x == x && this.p2y == y)
+                {
                     this.tower_map[x][y][1]--;
+
+                    PS.color(x, y, COLOR_P2_SERIES[11-Math.floor(this.tower_map[x][y][1]/5)]);
+                }
                 else
+                {
                     this.tower_map[x][y] = [0, 0];
+
+                    PS.color(x, y, COLOR_WHITE);
+                }
             }
         }
     }
