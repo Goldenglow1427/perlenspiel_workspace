@@ -170,6 +170,11 @@ class BattleField
      */
     p2base = 3;
 
+    /**
+     * The remaining countdown time.
+     */
+    countdown = 0;
+
     map;
 
     bomb_map;
@@ -786,11 +791,41 @@ class BattleField
 
         this.p1x = 4, this.p2x = 16;
         this.p1y = this.p2y = 8;
+
+        beginCountdown();
     }
 }
 
 var battle = new BattleField();
 var globalTick = 0;
+
+/**
+ * Timer related to the countdown.
+ */
+var countDownTimer;
+function Tcountdown()
+{
+    if(battle.countdown == 3)
+        PS.statusText("3...");
+    else if(battle.countdown == 2)
+        PS.statusText("2...");
+    else if(battle.countdown == 1)
+        PS.statusText("1...");
+    else if(battle.countdown == 0)
+    {
+        PS.statusText("Bomb It!");
+        PS.timerStop(countDownTimer);
+
+        return;
+    }
+
+    battle.countdown--;
+}
+function beginCountdown()
+{
+    battle.countdown = 3;
+    countDownTimer = PS.timerStart(50, Tcountdown);
+}
 
 PS.init = function( system, options ) {
 
@@ -804,6 +839,8 @@ PS.init = function( system, options ) {
 
     // PS.debug(battle.p2x);
     battle.drawMapSetup();
+
+    beginCountdown();
 
     PS.timerStart(3, function(){
         if(battle.gameEndIndicator == true)
@@ -873,6 +910,9 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 	// Uncomment the following code line to inspect first three parameters:
 
 	// PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
+
+    if(battle.countdown != 0)
+        return;
 
     if(key == 119) // W
         battle.p1movey = -1, battle.p1movex = 0;
