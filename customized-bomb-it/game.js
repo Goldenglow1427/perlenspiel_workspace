@@ -1,7 +1,7 @@
 
 "use strict"; // Do NOT remove this directive!
 
-const DeveloperSetting = true; // Do NOT change the value of this setting!
+const DeveloperSetting = false; // Do NOT change the value of this setting!
 
 const EdgeThickness = 2;
 const DefaultThickness = 1;
