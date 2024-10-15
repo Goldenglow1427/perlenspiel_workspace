@@ -1048,6 +1048,16 @@ class BattleField
         this.p1x = 4, this.p2x = 16;
         this.p1y = this.p2y = 8;
 
+        for(let i=1; i<=19; i++)
+            for(let j=2; j<=14; j++)
+            {
+                this.bomb_map[i][j] = 0;
+
+                PS.gridPlane(LAYER_BOMB);
+                PS.alpha(i, j, 0);
+                PS.color(i, j, COLOR_WHITE);
+            }
+
         beginCountdown();
     }
 
