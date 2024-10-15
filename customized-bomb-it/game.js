@@ -805,6 +805,8 @@ var globalTick = 0;
 var countDownTimer;
 function Tcountdown()
 {
+    battle.countdown--;
+
     if(battle.countdown == 3)
         PS.statusText("3...");
     else if(battle.countdown == 2)
@@ -818,12 +820,12 @@ function Tcountdown()
 
         return;
     }
-
-    battle.countdown--;
 }
 function beginCountdown()
 {
-    battle.countdown = 3;
+    if(battle.countdown != 0)
+        return;
+    battle.countdown = 4;
     countDownTimer = PS.timerStart(50, Tcountdown);
 }
 
