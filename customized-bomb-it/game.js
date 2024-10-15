@@ -54,6 +54,7 @@ const CHAR_TOWER = 0x2656;
 const CHAR_MAIN_TOWER = 0x1F5FC;
 const CHAR_RITUAL = 0x26E9;
 const CHAR_LABORATORY = 0x21D1;
+const CHAR_POWERUP_STUN = 0x1F4A5;
 
 const COLOR_RED = 0xDE7378;
 const COLOR_BLUE = 0x73DED9;
@@ -92,6 +93,8 @@ const COLOR_P2_SERIES = [
 ]
 
 // Tile indicators.
+const USE_MAP_VALUE = -100;
+
 const OUT_OF_BOUNDARY = -2;
 const WALL = -1;
 const PATH = 0;
@@ -105,6 +108,8 @@ const MAIN_TOWER_PLAYER_TWO = 7;
 const LABORATORY_PLAYER_ONE = 8;
 const LABORATORY_PLAYER_TWO = 9;
 const RITUAL = 10;
+
+const POWERUP_STUN = 20;
 
 /**
  * Layer used to set all exteral settings. Not interactive part for the game.
@@ -210,6 +215,18 @@ class BattleField
      */
     countdown = 0;
 
+    /**
+     * If player 1 is stunned, and the remaining time.
+     */
+    p1stunDuration = 0;
+
+    /**
+     * If player 2 is stunned, and the remaining time.
+     * 
+     * Unit: 100 milliseconds.
+     */
+    p2stunDuration = 0;
+
     map;
 
     bomb_map;
@@ -236,7 +253,7 @@ class BattleField
         this.tower_map = new Array(21).fill(0).map(() => new Array(15).fill(0).map(() => new Array(2).fill(0)));
         this.bomb_indicator_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
 
-        this.tower_list = [[10, 2], [10, 8], [10, 14]];
+        this.tower_list = [[10, 2], [10, 8], [10, 14], [9, 4], [11, 4], [9, 12], [11, 12]];
 
         this.p1base = this.p2base = 3;
 
@@ -292,9 +309,12 @@ class BattleField
         // this.map[10][6] = this.map[10][10] = EMPTY_MAIN_TOWER;
     }
 
-    drawGlyph(i, j, op)
+    drawGlyph(i, j, op=USE_MAP_VALUE)
     {
         PS.glyph(i, j, '');
+
+        if(op == USE_MAP_VALUE)
+            op = this.map[i][j];
         
         if(op == WALL)
         {
@@ -344,6 +364,11 @@ class BattleField
         {
             PS.glyphColor(i, j, COLOR_DARK_RED);
             PS.glyph(i, j, CHAR_TOWER);
+        }
+        if(op == POWERUP_STUN)
+        {
+            PS.glyphColor(i, j, COLOR_BLACK);
+            PS.glyph(i, j, CHAR_POWERUP_STUN);
         }
     }
 
@@ -507,10 +532,51 @@ class BattleField
                     return 1;
             case RITUAL:
                 return 1;
+            case POWERUP_STUN:
+                return 1;
         }
         
         PS.debug("BattleField.queryEnterTile(): tile status error.");
         return -1;
+    }
+
+    /**
+     * Get a random empty tile in the map, and return NULL if failed.
+     * @returns the [x, y] coordinates of the tile.
+     */
+    getRandomEmptyTile()
+    {
+        for(let i=1; i<=100; i++)
+        {
+            let x = PS.random(13) + 3;
+            let y = PS.random(13) + 1;
+            
+            if(this.map[x][y] == PATH && (x != this.p1x || y != this.p1y) && (x != this.p2x || y != this.p2y))
+                return [x, y];
+        }
+        
+        PS.debug("Failed to obtain a random empty tile!");
+        return null;
+    }
+
+    /**
+     * Get a random empty center tile in the map, and return NULL if failed.
+     * 
+     * @returns the [x, y] coordinates of the tile.
+     */
+    getRandomCenterTile()
+    {
+        for(let i=1; i<=100; i++)
+        {
+            let x = PS.random(5) + 7;
+            let y = PS.random(9) + 3;
+            
+            if(this.map[x][y] == PATH && (x != this.p1x || y != this.p1y) && (x != this.p2x || y != this.p2y))
+                return [x, y];
+        }
+        
+        PS.debug("Failed to obtain a random empty tile!");
+        return null;
     }
 
     /**
@@ -702,6 +768,25 @@ class BattleField
         // PS.glyphColor(this.p2x, this.p2y, COLOR_DARK_RED);
 
         this.p1movex = this.p1movey = this.p2movex = this.p2movey = 0;
+
+        if(this.map[this.p1x][this.p1y] == POWERUP_STUN)
+        {
+            this.map[this.p1x][this.p1y] = PATH;
+            this.drawGlyph(this.p1x, this.p1y, PATH);
+
+            this.p2stunDuration = 50;
+
+            beginTextDisplay("Player 2 is now stunned for 5 seconds!");
+        }
+        if(this.map[this.p2x][this.p2y] == POWERUP_STUN)
+        {
+            this.map[this.p2x][this.p2y] = PATH;
+            this.drawGlyph(this.p2x, this.p2y, PATH);
+            
+            this.p1stunDuration = 50;
+
+            beginTextDisplay("Player 1 is now stunned for 5 seconds!");
+        }
 
         if(this.p1action == true)
         {
@@ -919,17 +1004,87 @@ class BattleField
     }
 
     /**
+     * Update the stunning status of the two players.
+     * 
+     * Frequency: 6 ticks (10 times per second).
+     */
+    updateStunStatus()
+    {
+        if(this.p1stunDuration != 0)
+        {
+            this.p1stunDuration--;
+            PS.glyphColor(this.p1x, this.p1y, COLOR_BLUE);
+
+            if(this.p1stunDuration % 10 >= 5)
+                PS.glyph(this.p1x, this.p1y, '');
+            else
+                PS.glyph(this.p1x, this.p1y, 'O');
+        }
+        else
+            PS.glyphColor(this.p1x, this.p1y, COLOR_BLACK);
+
+        if(this.p2stunDuration != 0)
+        {
+            this.p2stunDuration--;
+            PS.glyphColor(this.p2x, this.p2y, COLOR_RED);
+
+            if(this.p2stunDuration % 10 >= 5)
+                PS.glyph(this.p2x, this.p2y, '');
+            else
+                PS.glyph(this.p2x, this.p2y, 'X');
+        }
+        else
+            PS.glyphColor(this.p2x, this.p2y, COLOR_BLACK);
+    }
+
+    /**
      * Called whenever a home base has being takedown.
      */
     onTowerTakedown()
     {
-        PS.glyph(this.p1x, this.p1y, '');
-        PS.glyph(this.p2x, this.p2y, '');
+        this.drawGlyph(this.p1x, this.p1y);
+        this.drawGlyph(this.p2x, this.p2y);
 
         this.p1x = 4, this.p2x = 16;
         this.p1y = this.p2y = 8;
 
         beginCountdown();
+    }
+
+    /**
+     * Generate several random powerups on the map.
+     * @param {int} count shows the amount of random powerups to be generated.
+     */
+    generateRandomPowerups(count=1)
+    {
+        for(let i=1; i<=count; i++)
+        {
+            var coords = this.getRandomEmptyTile();
+
+            this.map[coords[0]][coords[1]] = POWERUP_STUN;
+            this.drawGlyph(coords[0], coords[1], POWERUP_STUN);
+        }
+    }
+
+    /**
+     * Generate several random powerups, but raise chance for central tiles.
+     * 
+     * @param {int} count amount of powerups to generate.
+     */
+    generateCenteredRandomPowerups(count)
+    {
+        for(let i=1; i<=count; i++)
+        {
+            var rnd = PS.random(2), coords;
+
+            if(rnd == 1)
+                coords = this.getRandomCenterTile();
+            else
+                coords = this.getRandomEmptyTile();
+
+            this.map[coords[0]][coords[1]] = POWERUP_STUN;
+            this.drawGlyph(coords[0], coords[1], POWERUP_STUN);
+        }
     }
 }
 
@@ -966,6 +1121,27 @@ function beginCountdown()
     countDownTimer = PS.timerStart(50, Tcountdown);
 }
 
+/**
+ * Timer related to displaying text for a certain period.
+ */
+var displayTextTimer = null;
+function TdisplayText()
+{
+    PS.statusText("Bomb It!");
+    PS.timerStop(displayTextTimer);
+
+    displayTextTimer = null;
+}
+function beginTextDisplay(targetText)
+{
+    // Erase the previous display if it's not ended yet.
+    if(displayTextTimer != null)
+        TdisplayText();
+
+    PS.statusText(targetText);
+    displayTextTimer = PS.timerStart(180, TdisplayText);
+}
+
 PS.init = function( system, options ) {
 
     // battle.initialize();
@@ -994,7 +1170,10 @@ PS.init = function( system, options ) {
         {
             battle.updatePlayerOperation();
             battle.updateBombStatus();
+            battle.updateStunStatus();
         }
+        if(globalTick % 200 == 0)
+            battle.generateCenteredRandomPowerups(1);
         
         battle.updateBombIndicatorStatus();
     });
@@ -1055,27 +1234,33 @@ PS.keyDown = function( key, shift, ctrl, options ) {
     if(battle.countdown != 0)
         return;
 
-    if(key == 119) // W
-        battle.p1movey = -1, battle.p1movex = 0;
-    if(key == 115) // S
-        battle.p1movey = 1, battle.p1movex = 0;
-    if(key == 97) // A
-        battle.p1movex = -1, battle.p1movey = 0;
-    if(key == 100) // D
-        battle.p1movex = 1, battle.p1movey = 0;
-    if(key == 32) // space.
-        battle.p1action = true;
+    if(battle.p1stunDuration == 0)
+    {
+        if(key == 119) // W
+            battle.p1movey = -1, battle.p1movex = 0;
+        if(key == 115) // S
+            battle.p1movey = 1, battle.p1movex = 0;
+        if(key == 97) // A
+            battle.p1movex = -1, battle.p1movey = 0;
+        if(key == 100) // D
+            battle.p1movex = 1, battle.p1movey = 0;
+        if(key == 32) // space.
+            battle.p1action = true;
+    }
 
-    if(key == 1008) // downward arrow key.
-        battle.p2movey = 1, battle.p2movex = 0;
-    if(key == 1006) // upward arrow key.
-        battle.p2movey = -1, battle.p2movex = 0;
-    if(key == 1005) // leftward arrow key.
-        battle.p2movex = -1, battle.p2movey = 0;
-    if(key == 1007) // rightward arrow key.
-        battle.p2movex = 1, battle.p2movey = 0;
-    if(key == 13) // enter.
-        battle.p2action = true;
+    if(battle.p2stunDuration == 0)
+    {
+        if(key == 1008) // downward arrow key.
+            battle.p2movey = 1, battle.p2movex = 0;
+        if(key == 1006) // upward arrow key.
+            battle.p2movey = -1, battle.p2movex = 0;
+        if(key == 1005) // leftward arrow key.
+            battle.p2movex = -1, battle.p2movey = 0;
+        if(key == 1007) // rightward arrow key.
+            battle.p2movex = 1, battle.p2movey = 0;
+        if(key == 13) // enter.
+            battle.p2action = true;
+    }
 
     if(DeveloperSetting == true)
     {
