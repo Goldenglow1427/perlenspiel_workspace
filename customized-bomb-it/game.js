@@ -89,6 +89,7 @@ const COLOR_P2_SERIES = [
     0xe59397, 0xe18185, 0xdd6f74, 0xd95d63, 0xd54b52, 0xd03940
 ]
 
+// Tile indicators.
 const OUT_OF_BOUNDARY = -2;
 const WALL = -1;
 const PATH = 0;
@@ -102,6 +103,38 @@ const MAIN_TOWER_PLAYER_TWO = 7;
 const LABORATORY_PLAYER_ONE = 8;
 const LABORATORY_PLAYER_TWO = 9;
 const RITUAL = 10;
+
+/**
+ * Layer used to set all exteral settings. Not interactive part for the game.
+ */
+const LAYER_DEFAULT = 60;
+
+/**
+ * Layer used to store the position of all the walls, cannot be override.
+ */
+const LAYER_WALL = 50;
+
+/**
+ * Animation layer. Used to display the illustration when the bomb is aboutt to explode.
+ */
+const LAYER_BOMB_INDICATOR = 40;
+
+/**
+ * Layer used to place all the bombs.
+ */
+const LAYER_BOMB = 30;
+
+/**
+ * Animation layer. Used to display the animation when occupying towers.
+ */
+const LAYER_OCCUPY_INDICATOR = 20;
+
+/**
+ * Layer used to store all the obstacles.
+ */
+const LAYER_OBSTACLE = 10;
+
+const LAYER_LIST = [60, 50, 40, 30, 20, 10];
 
 const DIRECTION_PAIRS = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
@@ -256,12 +289,22 @@ class BattleField
 
     drawGlyph(i, j, op)
     {
-        PS.color(i, j, COLOR_WHITE);
         PS.glyph(i, j, '');
+        
         if(op == WALL)
+        {
+            PS.gridPlane(LAYER_WALL);
+
+            PS.alpha(i, j, 255);
             PS.color(i, j, COLOR_BLACK);
+        }
         if(op == OBSTACLE)
+        {
+            PS.gridPlane(LAYER_OBSTACLE);
+
+            PS.alpha(i, j, 255);
             PS.color(i, j, COLOR_GRAY);
+        }
         if(op == EMPTY_TOWER)
         {
             PS.glyphColor(i, j, COLOR_BLACK);
@@ -371,7 +414,12 @@ class BattleField
         PS.border(20, 0, right_edge);
         PS.border(15, 0, left_edge);
 
+        PS.gridPlane(LAYER_DEFAULT);
+
+        PS.alpha(0, 0, 255);
         PS.color(0, 0, COLOR_BLUE);
+
+        PS.alpha(20, 0, 255);
         PS.color(20, 0, COLOR_RED);
         // for(let i=1; i<=5; i++)
         //     PS.color(i, 0, COLOR_BLUE);
@@ -555,12 +603,19 @@ class BattleField
                 if(this.map[newx][newy] == OBSTACLE)
                 {
                     this.map[newx][newy] = PATH;
+
+                    PS.gridPlane(LAYER_OBSTACLE);
+                    PS.alpha(newx, newy, 0);
                     PS.color(newx, newy, COLOR_WHITE);
+
                     break;
                 }
                 if(this.map[newx][newy] == LABORATORY_PLAYER_ONE)
                 {
                     this.map[newx][newy] = OBSTACLE;
+
+                    PS.gridPlane(LAYER_OBSTACLE);
+                    PS.alpha(newx, newy, 255);
                     PS.color(newx, newy, COLOR_GRAY);
 
                     PS.glyph(newx, newy, '');
@@ -574,6 +629,9 @@ class BattleField
                 if(this.map[newx][newy] == LABORATORY_PLAYER_TWO)
                 {
                     this.map[newx][newy] = OBSTACLE;
+
+                    PS.gridPlane(LAYER_OBSTACLE);
+                    PS.alpha(newx, newy, 255);
                     PS.color(newx, newy, COLOR_GRAY);
 
                     PS.glyph(newx, newy, '');
@@ -666,14 +724,29 @@ class BattleField
                 {
                     this.bomb_map[i][j]--;
                     if(this.bomb_map[i][j] >= 10)
+                    {
+                        PS.gridPlane(LAYER_BOMB);
+                        PS.alpha(i, j, 255);
                         PS.color(i, j, COLOR_BOMB_0);
+                    }
                     else if(this.bomb_map[i][j] >= 5)
+                    {
+                        PS.gridPlane(LAYER_BOMB);
+                        PS.alpha(i, j, 255);
                         PS.color(i, j, COLOR_BOMB_1);
+                    }
                     else if(this.bomb_map[i][j] >= 1)
+                    {
+                        PS.gridPlane(LAYER_BOMB);
+                        PS.alpha(i, j, 255);
                         PS.color(i, j, COLOR_BOMB_2);
+                    }
                     else
                     {
                         this.detonateBomb(i, j);
+
+                        PS.gridPlane(LAYER_BOMB);
+                        PS.alpha(i, j, 0);
                         PS.color(i, j, COLOR_WHITE);
                     }
                 }
@@ -700,18 +773,25 @@ class BattleField
                     this.map[x][y] = TOWER_PLAYER_ONE;
 
                     PS.glyphColor(x, y, COLOR_DARK_BLUE);
+
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 0);
                     PS.color(x, y, COLOR_WHITE);
                 }
                 else if(this.p1x == x && this.p1y == y)
                 {
                     this.tower_map[x][y][1]--;
                     
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 255);
                     PS.color(x, y, COLOR_P1_SERIES[11-Math.floor(this.tower_map[x][y][1]/5)]);
                 }
                 else
                 {
                     this.tower_map[x][y] = [0, 0];
-
+                    
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 0);
                     PS.color(x, y, COLOR_WHITE);
                 }
             }
@@ -724,18 +804,25 @@ class BattleField
                     this.map[x][y] = TOWER_PLAYER_TWO;
                     
                     PS.glyphColor(x, y, COLOR_DARK_RED);
+
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 0);
                     PS.color(x, y, COLOR_WHITE);
                 }
                 else if(this.p2x == x && this.p2y == y)
                 {
                     this.tower_map[x][y][1]--;
-
+                    
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 255);
                     PS.color(x, y, COLOR_P2_SERIES[11-Math.floor(this.tower_map[x][y][1]/5)]);
                 }
                 else
                 {
                     this.tower_map[x][y] = [0, 0];
 
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 0);
                     PS.color(x, y, COLOR_WHITE);
                 }
             }
@@ -760,15 +847,28 @@ class BattleField
         if(this.p1base * this.p2base == 0)
             this.gameEndIndicator = true;
 
+        PS.gridPlane(LAYER_DEFAULT);
         for(let i=1; i<=this.p1health; i++)
+        {
+            PS.alpha(i, 0, 255);
             PS.color(i, 0, COLOR_BLUE);
+        }
         for(let i=this.p1health+1; i<=5; i++)
+        {
+            PS.alpha(i, 0, 0);
             PS.color(i, 0, COLOR_WHITE);
+        }
 
         for(let i=1; i<=this.p2health; i++)
+        {
+            PS.alpha(20-i, 0, 255);
             PS.color(20-i, 0, COLOR_RED);
+        }
         for(let i=this.p2health+1; i<=5; i++)
+        {
+            PS.alpha(20-i, 0, 0);
             PS.color(20-i, 0, COLOR_WHITE);
+        }
 
         if(this.p1health == 0 && this.p2health == 0)
             PS.statusText("The game ends with a tie.");
