@@ -236,6 +236,9 @@ class BattleField
 
     tower_list;
 
+    p1recordedHealth;
+    p2recordedHealth;
+
     constructor()
     {
         this.p1x = 4, this.p1y = 8;
@@ -622,6 +625,11 @@ class BattleField
 
         this.tower_map[x][y][0] = pl;
         this.tower_map[x][y][1] = 60;
+
+        if(pl == 1)
+            this.p1recordedHealth = this.p1health;
+        if(pl == 2)
+            this.p2recordedHealth = this.p2health;
     }
 
     /**
@@ -900,6 +908,17 @@ class BattleField
                     PS.alpha(x, y, 0);
                     PS.color(x, y, COLOR_WHITE);
                 }
+                else if((this.p1health != this.p1recordedHealth) || this.p1stunDuration != 0)
+                {
+                    this.tower_map[x][y] = [0, 0];
+                    
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 0);
+                    PS.color(x, y, COLOR_WHITE);
+
+                    if(this.p1stunDuration == 0)
+                        this.p1stunDuration = 20;
+                }
                 else if(this.p1x == x && this.p1y == y)
                 {
                     this.tower_map[x][y][1]--;
@@ -930,6 +949,17 @@ class BattleField
                     PS.gridPlane(LAYER_OCCUPY_INDICATOR);
                     PS.alpha(x, y, 0);
                     PS.color(x, y, COLOR_WHITE);
+                }
+                else if((this.p2health != this.p2recordedHealth) || this.p2stunDuration != 0)
+                {
+                    this.tower_map[x][y] = [0, 0];
+                    
+                    PS.gridPlane(LAYER_OCCUPY_INDICATOR);
+                    PS.alpha(x, y, 0);
+                    PS.color(x, y, COLOR_WHITE);
+
+                    if(this.p2stunDuration == 0)
+                        this.p2stunDuration = 20;
                 }
                 else if(this.p2x == x && this.p2y == y)
                 {
