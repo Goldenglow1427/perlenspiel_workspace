@@ -69,6 +69,8 @@ const COLOR_BOMB_0 = 0xffee9f;
 const COLOR_BOMB_1 = 0xffd61c;
 const COLOR_BOMB_2 = 0xff4000;
 
+const COLOR_BOMB_INDICATOR = 0xfff2b6;
+
 /**
  * Generated from the website: https://pinetools.com/monochromatic-colors-generator
  * 
@@ -213,6 +215,8 @@ class BattleField
     bomb_map;
     tower_map;
 
+    bomb_indicator_map;
+
     tower_list;
 
     constructor()
@@ -230,6 +234,7 @@ class BattleField
         this.health = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.bomb_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
         this.tower_map = new Array(21).fill(0).map(() => new Array(15).fill(0).map(() => new Array(2).fill(0)));
+        this.bomb_indicator_map = new Array(21).fill(0).map(() => new Array(15).fill(0));
 
         this.tower_list = [[10, 2], [10, 8], [10, 14]];
 
@@ -599,7 +604,10 @@ class BattleField
                 if(this.map[newx][newy] == WALL)
                     break;
                 if(this.map[newx][newy] == PATH)
+                {
+                    this.bomb_indicator_map[newx][newy] = 15;
                     continue;
+                }
                 if(this.map[newx][newy] == OBSTACLE)
                 {
                     this.map[newx][newy] = PATH;
@@ -749,6 +757,35 @@ class BattleField
                         PS.alpha(i, j, 0);
                         PS.color(i, j, COLOR_WHITE);
                     }
+                }
+    }
+
+    updateBombIndicatorStatus()
+    {
+        for(let i=0; i<=20; i++)
+            for(let j=0; j<=14; j++)
+                if(this.bomb_indicator_map[i][j] != 0)
+                {
+                    let val = this.bomb_indicator_map[i][j]--;
+
+                    if((13 <= val && val <= 15) || (7 <= val && val <= 9) || (1 <= val && val <= 3))
+                    {
+                        PS.gridPlane(LAYER_BOMB_INDICATOR);
+                        PS.alpha(i, j, 255);
+                        PS.color(i, j, COLOR_BOMB_INDICATOR);
+                    }
+                    else
+                    {
+                        PS.gridPlane(LAYER_BOMB_INDICATOR);
+                        PS.alpha(i, j, 0);
+                        PS.color(i, j, COLOR_WHITE);
+                    }
+                }
+                else
+                {
+                    PS.gridPlane(LAYER_BOMB_INDICATOR);
+                    PS.alpha(i, j, 0);
+                    PS.color(i, j, COLOR_WHITE);
                 }
     }
 
@@ -958,6 +995,8 @@ PS.init = function( system, options ) {
             battle.updatePlayerOperation();
             battle.updateBombStatus();
         }
+        
+        battle.updateBombIndicatorStatus();
     });
 
 };
