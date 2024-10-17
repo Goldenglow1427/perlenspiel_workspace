@@ -122,14 +122,14 @@ const LAYER_DEFAULT = 60;
 const LAYER_WALL = 50;
 
 /**
- * Animation layer. Used to display the illustration when the bomb is aboutt to explode.
- */
-const LAYER_BOMB_INDICATOR = 40;
-
-/**
  * Layer used to place all the bombs.
  */
-const LAYER_BOMB = 30;
+const LAYER_BOMB = 40;
+
+/**
+ * Animation layer. Used to display the illustration when the bomb is aboutt to explode.
+ */
+const LAYER_BOMB_INDICATOR = 30;
 
 /**
  * Animation layer. Used to display the animation when occupying towers.
@@ -144,6 +144,11 @@ const LAYER_OBSTACLE = 10;
 const LAYER_LIST = [60, 50, 40, 30, 20, 10];
 
 const DIRECTION_PAIRS = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+
+/**
+ * About the tower occupation.
+ */
+const TOWER_OCCUPATION_DURATION = 100; // Time required to occupy a tower, unit: 0.05 seconds.
 
 /**
  * About the powerups and props.
@@ -633,7 +638,7 @@ class BattleField
         }
 
         this.tower_map[x][y][0] = pl;
-        this.tower_map[x][y][1] = 60;
+        this.tower_map[x][y][1] = TOWER_OCCUPATION_DURATION;
 
         if(pl == 1)
             this.p1recordedHealth = this.p1health;
