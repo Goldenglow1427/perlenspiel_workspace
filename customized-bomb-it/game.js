@@ -146,6 +146,15 @@ const LAYER_LIST = [60, 50, 40, 30, 20, 10];
 const DIRECTION_PAIRS = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
 /**
+ * About the powerups and props.
+ */
+const POWERUP_TOTAL_CHANCE = 10;
+const POWERUP_REFRESH_RATE = 200; // Rate of generating powerups, unit: 0.05 seconds.
+
+const STUN_DURATION = 30; // Stunning time, unit: 0.1 seconds.
+const STUN_APPEAR_CHANCE = 10;
+
+/**
  * Class to monitor and update the battle page status.
  */
 class BattleField
@@ -782,18 +791,18 @@ class BattleField
             this.map[this.p1x][this.p1y] = PATH;
             this.drawGlyph(this.p1x, this.p1y, PATH);
 
-            this.p2stunDuration = 50;
+            this.p2stunDuration = STUN_DURATION;
 
-            beginTextDisplay("Player 2 is now stunned for 5 seconds!");
+            beginTextDisplay("Player 2 is now stunned for " + (STUN_DURATION/10) + " seconds!");
         }
         if(this.map[this.p2x][this.p2y] == POWERUP_STUN)
         {
             this.map[this.p2x][this.p2y] = PATH;
             this.drawGlyph(this.p2x, this.p2y, PATH);
             
-            this.p1stunDuration = 50;
+            this.p1stunDuration = STUN_DURATION;
 
-            beginTextDisplay("Player 1 is now stunned for 5 seconds!");
+            beginTextDisplay("Player 1 is now stunned for " + (STUN_DURATION/10) + " seconds!");
         }
 
         if(this.p1action == true)
@@ -1072,6 +1081,11 @@ class BattleField
      */
     onTowerTakedown()
     {
+        this.updateHealthStatus();
+
+        if(this.gameEndIndicator == true)
+            return;
+
         this.drawGlyph(this.p1x, this.p1y);
         this.drawGlyph(this.p2x, this.p2y);
 
@@ -1087,7 +1101,7 @@ class BattleField
                 PS.alpha(i, j, 0);
                 PS.color(i, j, COLOR_WHITE);
             }
-
+        
         beginCountdown();
     }
 
@@ -1134,7 +1148,7 @@ var globalTick = 0;
 /**
  * Timer related to the countdown.
  */
-var countDownTimer;
+var countDownTimer, originalText;
 function Tcountdown()
 {
     battle.countdown--;
@@ -1147,7 +1161,7 @@ function Tcountdown()
         PS.statusText("1...");
     else if(battle.countdown == 0)
     {
-        PS.statusText("Bomb It!");
+        PS.statusText(originalText);
         PS.timerStop(countDownTimer);
 
         return;
@@ -1158,6 +1172,9 @@ function beginCountdown()
     if(battle.countdown != 0)
         return;
     battle.countdown = 4;
+
+    originalText = PS.statusText();
+
     countDownTimer = PS.timerStart(50, Tcountdown);
 }
 
@@ -1212,7 +1229,7 @@ PS.init = function( system, options ) {
             battle.updateBombStatus();
             battle.updateStunStatus();
         }
-        if(globalTick % 200 == 0)
+        if(globalTick % POWERUP_REFRESH_RATE == 0)
             battle.generateCenteredRandomPowerups(1);
         
         battle.updateBombIndicatorStatus();
